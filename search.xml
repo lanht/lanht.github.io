@@ -6,176 +6,6 @@
     <content><![CDATA[]]></content>
   </entry>
   <entry>
-    <title>FMDB使用分析</title>
-    <url>/2020/05/12/FMDB%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/</url>
-    <content><![CDATA[<h3 id="一、基本介绍"><a href="#一、基本介绍" class="headerlink" title="一、基本介绍"></a>一、基本介绍</h3><ul>
-<li>什么是FMDB  </li>
-</ul>
-<p>– FMDB是iOS平台的SQLite数据库框架<br>– FMDB以OC的方式封装了SQLite的C语言API</p>
-<ul>
-<li>FMDB常用类：  </li>
-</ul>
-<p>– <strong>FMDatabase</strong>：一个FMDatabase对象就代表一个单独的SQLite数据库用来执行SQL语句<br>– <strong>FMResultSet</strong>：使用FMDatabase执行查询后的结果集<br>– <strong>FMDatabaseQueue</strong>：用于在多线程中执行多个查询或更新，它是线程安全的  </p>
-<ul>
-<li>FMDB的优点  </li>
-</ul>
-<p>– 使用起来更加面向对象，省去了很多麻烦、冗余的C语言代码<br>– 对比苹果自带的Core Data框架，更加轻量级和灵活<br>– 提供了多线程安全的数据库操作方法，有效地防止数据混乱</p>
-<ul>
-<li>FMDB的缺点  </li>
-</ul>
-<p>– 它本身也存在一些问题，比如跨平台，因为它是用oc的语言封装的，所以<br>只能在ios开发的时候使用，如果想实现跨平台的操作，来降低开发的成本<br>和维护的成本,就需要使用比较原始的SQLite。</p>
-<h3 id="二、使用方法"><a href="#二、使用方法" class="headerlink" title="二、使用方法"></a>二、使用方法</h3><ul>
-<li><p>打开数据库<br>通过指定SQLite数据库文件路径来创建FMDatabase对象</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">FMDatabase *db = [FMDatabase databaseWithPath:path];</span><br><span class="line"><span class="keyword">if</span> (![db open]) &#123;</span><br><span class="line">  <span class="built_in">NSLog</span>(<span class="string">@"数据库打开失败！"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>关于文件路径的三种情况：</p>
-<blockquote>
-<p>1.具体的文件路径,或是数据库的文件不存在时,fmdb会自己创建一个。<br>2.若文件路径为空字符串@””，会在临时目录创建一个空的数据库。<br>并且，当(FMDatabase)数据库断开连接时，数据库文件被删除。<br>3.若你传入的参数为NULL，则它会建立一个在内存中的数据库，数据库断开连接时，数据库文件被删除。  </p>
-</blockquote>
-</li>
-<li><p>执行更新：<br>在FMDB中,除查询以外的所有操作,都称为“更新”如：create、drop、insert、update、delete等。<br>FMDB数据库操作使用 executeUpdate: 方法执行更新,返回BOOL型。 </p>
-</li>
-</ul>
-<p>executeUpdate:用法  </p>
-<blockquote>
-<p>-(BOOL)executeUpdate:(NSString)sql, …<br>-(BOOL)executeUpdateWithFormat:(NSString)format, …<br>-(BOOL)executeUpdate:(NSString*)sql withArgumentsInArray:(NSArray *)arguments<br>示例<br>[db executeUpdate:@”UPDATE t_student SET age = ? WHERE name = ?;”, @20, @”Jack”]</p>
-</blockquote>
-<ul>
-<li>执行查询<br>查询方法<blockquote>
-<p>-(FMResultSet )executeQuery: (NSString)sql, …<br>-(FMResultSet )executeQueryWithFormat:(NSString)format, …<br>-(FMResultSet *)executeQuery:(NSString *)sql withArgumentsInArray:(NSArray *)arguments  </p>
-</blockquote>
-</li>
-</ul>
-<p>示例</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 查询数据</span></span><br><span class="line">FMResultSet *rs = [db executeQuery:<span class="string">@"SELECT * FROM t_student"</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 遍历结果集</span></span><br><span class="line"><span class="keyword">while</span> ([rs next]) &#123; </span><br><span class="line">  <span class="built_in">NSString</span> *name = [rs stringForColumn:<span class="string">@"name"</span>];</span><br><span class="line">  <span class="keyword">int</span> age = [rs intForColumn:<span class="string">@"age"</span>];</span><br><span class="line">  <span class="keyword">double</span> score = [rs doubleForColumn:<span class="string">@"score"</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>FMDatabaseQueue</li>
-</ul>
-<p>注意：  </p>
-<blockquote>
-<p>FMDatabase这个类是线程不安全的，如果在多个线程中同时使用一个<br>FMDatabase实例，会造成数据混乱等问题<br>为了保证线程安全，FMDB提供方便快捷的FMDatabaseQueue<br>FMDatabaseQueue的创建<br>FMDatabaseQueue *queue = [FMDatabaseQueue databaseQueueWithPath:path];</p>
-</blockquote>
-<p>简单使用</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">[queue inDatabase:^(FMDatabase *db) &#123; </span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jack"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Rose"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jim"</span>];</span><br><span class="line">  FMResultSet *rs = [db executeQuery:<span class="string">@"select * from t_student"</span>];</span><br><span class="line">  <span class="keyword">while</span> ([rs next]) &#123;</span><br><span class="line">    <span class="comment">// …</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
-<p>使用事务</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">[queue inTransaction:^(FMDatabase *db, <span class="built_in">BOOL</span> *rollback) &#123;</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jack"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Rose"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jim"</span>];</span><br><span class="line">  FMResultSet *rs = [db executeQuery:<span class="string">@"select * from t_student"</span>];</span><br><span class="line">  <span class="keyword">while</span> ([rs next]) &#123;</span><br><span class="line">    <span class="comment">// …</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
-<h3 id="三、数据库迁移"><a href="#三、数据库迁移" class="headerlink" title="三、数据库迁移"></a>三、数据库迁移</h3><p>使用FMDB与FMDBMigrationManager结合 进行数据库版本的升级  </p>
-<p>具体可以查看下面博客<br>iOS的数据库升级FMDBMigrationManager:<a href="https://www.jianshu.com/p/66bc680c4360" target="_blank" rel="noopener">https://www.jianshu.com/p/66bc680c4360</a><br>iOS 使用FMDB与FMDBMigrationManager结合 进行数据库版本的升级:<a href="https://blog.csdn.net/u014305730/article/details/82385126" target="_blank" rel="noopener">https://blog.csdn.net/u014305730/article/details/82385126</a>  </p>
-<h3 id="四、数据库加密"><a href="#四、数据库加密" class="headerlink" title="四、数据库加密"></a>四、数据库加密</h3><p>数据库加密一般有两种方式</p>
-<p>1、对所有数据进行加密  </p>
-<p>2、对数据库文件加密</p>
-<p>对比以上两种方式，第一种方式的常见做法是是将要存储的内容先加密然后存到数据库中，使用的时候将数据库解密，但是这样会消耗很多时间，大部分性能消耗在数据的加解密上，同时，第二种方式，SQLite本身支持加密功能(免费版的不支持) ，SQLCipher是一个开源的SQLite加密扩展，支持对db文件进行256位的AES加密，通常我们会用FMDB这个工具库，FMDB对原生的SQLite进行了封装，提供了面向对象的方式对数据库操作，同时FMDB 也提供了对 SQLCipher 的支持。（在github上集成fmdb上可以看到pod ’fmdb/sqlCipher‘）  </p>
-<p>FMDB数据库加密:<a href="https://www.jianshu.com/p/0c38bf93dcc0" target="_blank" rel="noopener">https://www.jianshu.com/p/0c38bf93dcc0</a></p>
-<h3 id="五、示例代码"><a href="#五、示例代码" class="headerlink" title="五、示例代码"></a>五、示例代码</h3><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="built_in">BOOL</span>)openDB &#123;</span><br><span class="line">    <span class="built_in">NSString</span> *path = [<span class="built_in">NSSearchPathForDirectoriesInDomains</span>(<span class="built_in">NSDocumentDirectory</span>, <span class="built_in">NSUserDomainMask</span>, <span class="literal">YES</span>).lastObject stringByAppendingPathComponent:<span class="string">@"database.sqlite"</span>];</span><br><span class="line">    FMDatabase *db = [FMDatabase databaseWithPath:path];</span><br><span class="line">    _db = db;</span><br><span class="line">    <span class="keyword">if</span> ([db open]) &#123;</span><br><span class="line">        <span class="built_in">BOOL</span> result = [db executeUpdate:<span class="string">@"CREATE TABLE IF NOT EXISTS t_student (id integer PRIMARY KEY AUTOINCREMENT, name text NOT NULL, age integer NOT NULL);"</span>];</span><br><span class="line">        <span class="keyword">if</span> (result) &#123;</span><br><span class="line">            <span class="built_in">NSLog</span>(<span class="string">@"表创建成功"</span>);</span><br><span class="line">            [db close];</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">NSLog</span>(<span class="string">@"表创建失败"</span>);</span><br><span class="line">             [db close];</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">NSLog</span>(<span class="string">@"打开失败"</span>);</span><br><span class="line">         [db close];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)add &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"INSERT INTO t_student (name, age) VALUES (?,?);"</span>, <span class="string">@"tom"</span>, @(arc4random_uniform(<span class="number">40</span>))];</span><br><span class="line">        <span class="comment">//    [self.db executeUpdate:@"INSERT INTO t_student (name, age) VALUES (?,?);" withArgumentsInArray:@[@"tom",@(arc4random_uniform(40))]];</span></span><br><span class="line">        <span class="comment">//    [self.db executeUpdateWithFormat:@"INSERT INTO t_student (name, age) VALUES (%@,%d);", @"tom", @(arc4random_uniform(40))];</span></span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)deleteStudent:(<span class="built_in">NSInteger</span>)ID &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"delete from t_student where id = ?;"</span>, @(ID)];</span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)update:(Student *)s &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        s.age = s.age - <span class="number">1</span>;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"update t_student set age = ? where id = ?;"</span>,s.age, s.ID];</span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)query &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        FMResultSet *resultSet = [<span class="keyword">self</span>.db executeQuery:<span class="string">@"SELECT * FROM t_student;"</span>];</span><br><span class="line">        <span class="built_in">NSMutableArray</span> *tmp = [<span class="built_in">NSMutableArray</span> array];</span><br><span class="line">        <span class="keyword">while</span> ([resultSet next]) &#123;</span><br><span class="line">            <span class="keyword">int</span> ID = [resultSet intForColumn:<span class="string">@"id"</span>];</span><br><span class="line">            <span class="built_in">NSString</span> *name = [resultSet stringForColumn:<span class="string">@"name"</span>];</span><br><span class="line">            <span class="keyword">int</span> age = [resultSet intForColumn:<span class="string">@"age"</span>];</span><br><span class="line">            </span><br><span class="line">            Student *s = [[Student alloc]init];</span><br><span class="line">            s.ID = ID;</span><br><span class="line">            s.name = name;</span><br><span class="line">            s.age = age;</span><br><span class="line">            </span><br><span class="line">            [tmp addObject:s];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">self</span>.students = tmp;</span><br><span class="line">        </span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>iOS开发数据库篇—FMDB简单介绍:<a href="https://www.cnblogs.com/wendingding/p/3871848.html" target="_blank" rel="noopener">https://www.cnblogs.com/wendingding/p/3871848.html</a></p>
-]]></content>
-      <categories>
-        <category>iOS</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>iOS面试题收录（一）</title>
-    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%80%EF%BC%89/</url>
-    <content><![CDATA[<p>主题：是什么？</p>
-<h4 id="关键字const什么含义？"><a href="#关键字const什么含义？" class="headerlink" title="关键字const什么含义？"></a>关键字const什么含义？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> *a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> *a;</span><br><span class="line"><span class="keyword">int</span> * <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> * <span class="keyword">const</span> a;</span><br></pre></td></tr></table></figure>
-
-<p>1&gt;. 前两个的作用是一样：a 是一个常整型数<br>2&gt;. 第三、四个意味着 a 是一个指向常整型数的指针(整型数是不可修改的，但指针可以)<br>3&gt;. 第五个的意思：a 是一个指向整型数的常指针(指针指向的整型数是可以修改的，但指针是不可修改的)<br>4&gt;. 最后一个意味着：a 是一个指向常整型数的常指针(指针指向的整型数是不可修改的，同时指针也是不可修改的)</p>
-<h4 id="import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？"><a href="#import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？" class="headerlink" title="#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？"></a>#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？</h4><ol>
-<li><p>#import是Objective-C导入头文件的关键字，#include是C/C++导入头文件的关键字，使用#import头文件会自动只导入一次，不会重复导入。</p>
-</li>
-<li><p>@class告诉编译器某个类的声明，当执行时，才去查看类的实现文件，可以解决头文件的相互包含。</p>
-</li>
-<li><p>#import&lt;&gt;用来包含系统的头文件，#import””用来包含用户头文件。</p>
-</li>
-</ol>
-<h4 id="property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？"><a href="#property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？" class="headerlink" title="@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？"></a>@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？</h4><p>@property 的本质是:@property = ivar + getter + setter</p>
-<p>“属性” (property)有两大概念：ivar（实例变量）、getter+setter（存取方法）</p>
-<p>“属性” (property)作为 Objective-C 的一项特性，主要的作用就在于封装对象中的数据。 Objective-C 对象通常会把其所需要的数据保存为各种实例变量。实例变量一般通过“存取方法”(access method)来访问。其中，“获取方法” (getter)用于读取变量值，而“设置方法” (setter)用于写入变量值。</p>
-<h4 id="property中有哪些属性关键字以及作用？"><a href="#property中有哪些属性关键字以及作用？" class="headerlink" title="@property中有哪些属性关键字以及作用？"></a>@property中有哪些属性关键字以及作用？</h4><p><strong>线程安全</strong></p>
-<p><strong>nonatomic ：</strong>非原子操作。决定编译器生成的setter和getter方法是否是原子操作，一般使用nonatomic，效率高。<br><strong>atomic：</strong>多线程安全，但是性能低</p>
-<p><strong>内存管理</strong></p>
-<p><strong>strong：</strong>持有特性。setter方法将传入参数先保留，再赋值，传入参数的retaincount会+1。<br><strong>copy ：</strong>拷贝特性。setter方法将传入对象复制一份，需要完全一份新的变量时。<br><strong>assign：</strong>用于基本数据类型<br><strong>retain</strong>：相当于ARC中的strong</p>
-<p><strong>读写操作</strong></p>
-<p><strong>readwrite：</strong>可读可写特性。需要生成getter方法和setter方法<br><strong>readonly：</strong>只读特性。只会生成getter方法，不会生成setter方法，不希望属性在类外改变。</p>
-<h4 id="什么情况使用-weak-关键字，相比-assign-有什么不同？"><a href="#什么情况使用-weak-关键字，相比-assign-有什么不同？" class="headerlink" title="什么情况使用 weak 关键字，相比 assign 有什么不同？"></a>什么情况使用 weak 关键字，相比 assign 有什么不同？</h4><p>1&gt;.在 ARC 中,在有可能出现循环引用的时候,往往要通过让其中一端使用 weak 来解决,比如: delegate 代理属性。<br>2&gt;.自身已经对它进行一次强引用,没有必要再强引用一次,此时也会使用 weak,自定义 IBOutlet 控件属性一般也使用 weak（因为父控件的subViews数组已经对它有一个强引用）。</p>
-<p>不同点：<br>assign 可以用非 OC 对象，而 weak 必须用于 OC 对象。<br>weak 表明该属性定义了一种“非拥有关系”。在属性所指的对象销毁时，属性值会自动清空(nil)。</p>
-<h4 id="用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？"><a href="#用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？" class="headerlink" title="用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？"></a>用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？</h4><p>用 @property 声明 NSString、NSArray、NSDictionary 经常使用 copy 关键字，是因为他们有对应的可变类型：NSMutableString、NSMutableArray、NSMutableDictionary，他们之间可能进行赋值操作（就是把可变的赋值给不可变的），为确保对象中的字符串值不会无意间变动，应该在设置新属性值时拷贝一份。</p>
-<p>1&gt;. 因为父类指针可以指向子类对象,使用 copy 的目的是为了让本对象的属性不受外界影响,使用 copy 无论给我传入是一个可变对象还是不可对象,我本身持有的就是一个不可变的副本。<br>2&gt;. 如果我们使用是 strong ,那么这个属性就有可能指向一个可变对象,如果这个可变对象在外部被修改了,那么会影响该属性。<br>总结：使用copy的目的是，防止把可变类型的对象赋值给不可变类型的对象时，可变类型对象的值发送变化会无意间篡改不可变类型对象原来的值。</p>
-<h4 id="浅拷贝和深拷贝的区别？"><a href="#浅拷贝和深拷贝的区别？" class="headerlink" title="浅拷贝和深拷贝的区别？"></a>浅拷贝和深拷贝的区别？</h4><p><strong>浅拷贝：</strong>对一个对象地址的拷贝。源对象和副本对象是同一对象<br><strong>深拷贝：</strong>对一个对象的拷贝。源对象和副本对象是不同的两个对象</p>
-<h4 id="self-跟self-gt-什么区别？"><a href="#self-跟self-gt-什么区别？" class="headerlink" title="self.跟self-&gt;什么区别？"></a>self.跟self-&gt;什么区别？</h4><p>1&gt;. self.是调用get方法或者set放<br>2&gt;. self是当前本身，是一个指向当前对象的指针<br>3&gt;. self-&gt;是直接访问成员变量</p>
-<h4 id="一个objc对象的isa的指针指向什么？有什么作用？"><a href="#一个objc对象的isa的指针指向什么？有什么作用？" class="headerlink" title="一个objc对象的isa的指针指向什么？有什么作用？"></a>一个objc对象的isa的指针指向什么？有什么作用？</h4><p>指向他的类对象,从而可以找到对象上的方法</p>
-<h4 id="frame-和-bounds-有什么不同？"><a href="#frame-和-bounds-有什么不同？" class="headerlink" title="frame 和 bounds 有什么不同？"></a>frame 和 bounds 有什么不同？</h4><p><strong>frame：</strong>该view在父view坐标系统中的位置和大小。(参照点是父view的坐标系统)</p>
-<p><strong>bounds：</strong>该view在本身坐标系统中的位置和大小。(参照点是本身坐标系统)</p>
-<h4 id="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"><a href="#Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？" class="headerlink" title="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"></a>Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？</h4><p>OC不可以多继承，OC是单继承。有时可以用分类和协议来代替多继承<br>可以实现多个接口（协议）<br>Category是类别；一般情况用分类好，用Category去重写类的方法，仅对本Category有效，不会影响到其他类与原有类的关系。</p>
-<h4 id="Object-C有私有方法吗？私有变量呢？"><a href="#Object-C有私有方法吗？私有变量呢？" class="headerlink" title="Object-C有私有方法吗？私有变量呢？"></a>Object-C有私有方法吗？私有变量呢？</h4><p>1&gt;.OC没有类似@private的修饰词来修饰方法，只要写在.h文件中，就是公共方法<br>2&gt;. 如果你不在.h文件中声明，只在.m文件中实现，或在.m文件的Class Extension里声明，那么基本上和私有方法差不多，可以使用类扩展（Extension）来增加私有方法和私有变量<br>3&gt;. 使用private修饰的全局变量是私有变量</p>
-<h4 id="用伪代码写一个线程安全的单例模式"><a href="#用伪代码写一个线程安全的单例模式" class="headerlink" title="用伪代码写一个线程安全的单例模式"></a>用伪代码写一个线程安全的单例模式</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">static</span> XXManager * instance = <span class="literal">nil</span>;</span><br><span class="line">+ (<span class="keyword">instancetype</span>)shareInstance &#123;</span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [[<span class="keyword">self</span> alloc] init];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">id</span>)allocWithZone:(<span class="keyword">struct</span> _NSZone *)zone &#123;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [<span class="keyword">super</span> allocWithZone:zone];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line">- (<span class="keyword">id</span>)copyWithZone:(<span class="built_in">NSZone</span> *)zone &#123;</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="category-类别-和-extension-扩展-的区别"><a href="#category-类别-和-extension-扩展-的区别" class="headerlink" title="category(类别) 和 extension(扩展) 的区别"></a>category(类别) 和 extension(扩展) 的区别</h4><p>1&gt;. 类别有名字，类扩展没有分类名字，是一种特殊的分类。<br>2&gt;. 类别只能扩展方法（属性仅仅是声明，并没真正实现），类扩展可以扩展属性、成员变量和方法。<br>3&gt;. 继承可以增加，修改或者删除方法，并且可以增加属性。</p>
-<h4 id="delegate-和-notification-的区别"><a href="#delegate-和-notification-的区别" class="headerlink" title="delegate 和 notification 的区别"></a>delegate 和 notification 的区别</h4><p>二者都用于传递消息，不同之处主要在于一个是一对一的，另一个是一对多的<br><strong>notification：</strong>不需要两者之间有联系,实现一对多消息的转发<br><strong>delegate：</strong>需要两者之间必须建立联系，不然没法调用代理的方法</p>
-<h4 id="Objective-C-如何对内存管理的，说说你的看法和解决方法？"><a href="#Objective-C-如何对内存管理的，说说你的看法和解决方法？" class="headerlink" title="Objective-C 如何对内存管理的，说说你的看法和解决方法？"></a>Objective-C 如何对内存管理的，说说你的看法和解决方法？</h4><p>Objective-C的内存管理主要有三种方式ARC(自动内存计数)、手动内存计数、内存池。<br>1&gt;. 自动内存计数ARC：由Xcode自动在App编译阶段，在代码中添加内存管理代码。<br>2&gt;. 手动内存计数MRC：遵循内存谁申请、谁释放；谁添加，谁释放的原则。<br>3&gt;. 内存释放池Release Pool：把需要释放的内存统一放在一个池子中，当池子被抽干后(drain)，池子中所有的内存空间也被自动释放掉。内存池的释放操作分为自动和手动。自动释放受runloop机制影响。</p>
-<h4 id="GCD-与-NSOperation-的区别"><a href="#GCD-与-NSOperation-的区别" class="headerlink" title="GCD 与 NSOperation 的区别"></a>GCD 与 NSOperation 的区别</h4><p><strong>NSOperation:</strong>相对于GCD来说，更加强大。可以给operation之间添加依赖关系、取消一个正在执行的operation、暂停和恢复operationQueue等</p>
-<p><strong>GCD:</strong> 是一种更轻量级的，以FIFO(先进先出，后进后出)的顺序执行并发任务。使用GCD我们并不用关心任务的调度情况，而是系统会自动帮我们处理。但是GCD的短板也是非常明显的，比如我们想要给任务之间添加依赖关系、取消或者暂停一个正在执行的任务时就会变得束手无策。</p>
-<h4 id="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"><a href="#OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？" class="headerlink" title="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"></a>OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建线程的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="built_in">NSThread</span> detachNewThreadSelector:<span class="literal">nil</span> toTarget:<span class="literal">nil</span> withObject:<span class="literal">nil</span>]</span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorInBackground:<span class="literal">nil</span> withObject:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSThread</span> alloc] initWithTarget:<span class="literal">nil</span> selector:<span class="literal">nil</span> object:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_global_queue(<span class="number">0</span>, <span class="number">0</span>), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> new] addOperation:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 主线程中执行代码的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorOnMainThread:<span class="literal">nil</span> withObject:<span class="literal">nil</span> waitUntilDone:<span class="literal">YES</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_main_queue(), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> mainQueue] addOperation:<span class="literal">nil</span>];</span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="runloop-和线程有什么关系"><a href="#runloop-和线程有什么关系" class="headerlink" title="runloop 和线程有什么关系?"></a>runloop 和线程有什么关系?</h4><p>runloop与线程是一一对应的，一个runloop对应一个核心的线程，为什么说是核心的，是因为runloop是可以嵌套的，但是核心的只能有一个，他们的关系保存在一个全局的字典里。 runloop是来管理线程的，当线程的runloop被开启后，线程会在执行完任务后进入休眠状态，有了任务就会被唤醒去执行任务。 runloop在第一次获取时被创建，在线程结束时被销毁。 对于主线程来说，runloop在程序一启动就默认创建好了。 对于子线程来说，runloop是懒加载的，只有当我们使用的时候才会创建，所以在子线程用定时器要注意：确保子线程的runloop被创建，不然定时器不会回调。</p>
-<h4 id="介绍下layoutSubview和drawRect"><a href="#介绍下layoutSubview和drawRect" class="headerlink" title="介绍下layoutSubview和drawRect"></a>介绍下layoutSubview和drawRect</h4><p>layoutSubviews调用情况</p>
-<ul>
-<li><p>init初始化UIView不会触发调用 </p>
-</li>
-<li><p>addSubview会触发调用 </p>
-</li>
-<li><p>改变view的width和height的时候回触发</p>
-</li>
-<li><p>调用 一个UIScrollView滚动会触发调用 </p>
-</li>
-<li><p>旋转screen会触发调用 </p>
-</li>
-<li><p>改变一个UIView大小的时候会触发</p>
-</li>
-<li><p>superView的layoutSubviews事件 直接调用setLayoutSubviews会触发调用 </p>
-</li>
-<li><p>-(void)viewWillAppear:(BOOL)animated会触发一次调用</p>
-</li>
-<li><p>-(void)viewDidAppear:(BOOL)animated 看情况</p>
-<p>可能有调用 drawRect调用情况 </p>
-</li>
-<li><p>如果UIView没有设置frame大小，直接导致drawRect不能被自动调用。 </p>
-</li>
-<li><p>drawRect在loadView和viewDidLoad这两个方法之后调用 调用sizeToFit后自动调用drawRect </p>
-</li>
-<li><p>通过设置contentMode值为UIViewContentModeRedraw。那么每次设置或者更改frame自动调用drawRect。 </p>
-</li>
-<li><p>直接调用setNeedsDisplay或者setNeedsDisplayInRect会触发调用</p>
-</li>
-</ul>
-<h4 id="UIview-和CAlayer-是什么关系-你-CLayer做过什么"><a href="#UIview-和CAlayer-是什么关系-你-CLayer做过什么" class="headerlink" title="UIview 和CAlayer 是什么关系? 你 CLayer做过什么?"></a>UIview 和CAlayer 是什么关系? 你 CLayer做过什么?</h4><p>区别： 首先UIView可以响应事件，Layer不可以.</p>
-<p>关系：</p>
-<ol>
-<li>UIView是CALayer的delegate </li>
-<li>UIView主要处理事件，CALayer负责绘制就更好 </li>
-<li>每个 UIView 内部都有一个 CALayer 在背后提供内容的绘制和显示，并且 UIView 的尺寸样式都由内部的 Layer 所提供。两者都有树状层级结构，layer 内部有 SubLayers，View 内部有 SubViews.但是 Layer 比 View 多了个AnchorPoint </li>
-</ol>
-<p>用layer做过什么：创建隐式动画 绘制边框圆角</p>
-<h4 id="iOS-UIViewController的完整生命周期"><a href="#iOS-UIViewController的完整生命周期" class="headerlink" title="iOS UIViewController的完整生命周期?"></a>iOS UIViewController的完整生命周期?</h4><p>按照执行顺序排列：</p>
-<p>1&gt;. <code>initWithCoder：</code>通过nib文件初始化时触发。<br>2&gt;. <code>awakeFromNib：</code>nib文件被加载的时候，会发生一个<code>awakeFromNib</code>的消息到nib文件中的每个对象。<br>3&gt;. <code>loadView：</code>开始加载视图控制器自带的view。<br>4&gt;. <code>viewDidLoad：</code>视图控制器的view被加载完成。<br>5&gt;. <code>viewWillAppear：</code>视图控制器的view将要显示在window上。<br>6&gt;. <code>updateViewConstraints：</code>视图控制器的view开始更新AutoLayout约束。<br>7&gt;. <code>viewWillLayoutSubviews：</code>视图控制器的view将要更新内容视图的位置。<br>8&gt;. <code>viewDidLayoutSubviews：</code>视图控制器的view已经更新视图的位置。<br>9&gt;. <code>viewDidAppear：</code>视图控制器的view已经展示到window上。<br>10&gt;. <code>viewWillDisappear：</code>视图控制器的view将要从window上消失。<br>11&gt;.<code>viewDidDisappear：</code>视图控制器的view已经从window上消失。</p>
-<h4 id="tableView的重用机制？"><a href="#tableView的重用机制？" class="headerlink" title="tableView的重用机制？"></a>tableView的重用机制？</h4><p>UITableView 通过重用单元格来达到节省内存的目的: 通过为每个单元格指定一个重用标识符，即指定了单元格的种类,当屏幕上的单元格滑出屏幕时，系统会把这个单元格添加到重用队列中，等待被重用，当有新单元格从屏幕外滑入屏幕内时，从重用队列中找看有没有可以重用的单元格，如果有，就拿过来用，如果没有就创建一个来使用</p>
-<h4 id="NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的"><a href="#NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的" class="headerlink" title="NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?"></a>NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?</h4><ol>
-<li><p>下载 NSURLConnection下载文件时，先是将整个文件下载到内存，然后再写入到沙盒，如果文件比较大，就会出现内存暴涨的情况。 而使用NSURLSessionUploadTask下载文件，会默认下载到沙盒中的tem文件中，不会出现内存暴涨的情况，但是在下载完成后会把tem中的临时文件删除，需要在初始化任务方法时，在completionHandler回调中增加保存文件的代码 </p>
-</li>
-<li><p>请求方法的控制 NSURLConnection实例化对象，实例化开始，默认请求就发送(同步发送),不需要调用start方法。而cancel可以停止请求的发送，停止后不能继续访问，需要创建新的请求。 NSURLSession有三个控制方法，取消(cancel)、暂停(suspend)、继续(resume)，暂停以后可以通过继续恢复当前的请求任务。 使用NSURLSession进行断点下载更加便捷. NSURLSession的构造方法（sessionWithConfiguration:delegate:delegateQueue）中有一个NSURLSessionConfiguration类的参数可以设置配置信息，其决定了cookie，安全和高速缓存策略，最大主机连接数，资源管理，网络超时等配置。NSURLConnection不能进行这个配置，相比较与NSURLConnection依赖与一个全局的配置对象，缺乏灵活性而言，NSURLSession有很大的改进</p>
-</li>
-</ol>
-]]></content>
-      <categories>
-        <category>iOS面试汇总</category>
-      </categories>
-  </entry>
-  <entry>
     <title>CoreData使用分析</title>
     <url>/2020/05/12/CoreData%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/</url>
     <content><![CDATA[<h3 id="一、基本介绍"><a href="#一、基本介绍" class="headerlink" title="一、基本介绍"></a>一、基本介绍</h3><ul>
@@ -251,6 +81,75 @@
 <p>所以在backgroundMOC的save方法执行时，是对内存中的上下文做了改变，当拥有PSC的mainMOC执行save方法后，是对本地存储区做了改变。</p>
 <h3 id="参看链接"><a href="#参看链接" class="headerlink" title="参看链接"></a>参看链接</h3><p>Core Data 概述:(相关CoreData系列文章)<a href="https://objccn.io/issue-4-1/" target="_blank" rel="noopener">https://objccn.io/issue-4-1/</a><br>认识CoreData - 初识CoreData(写了CoreData系列文章，都可以看看)：<a href="https://www.jianshu.com/p/c0e12a897971" target="_blank" rel="noopener">https://www.jianshu.com/p/c0e12a897971</a></p>
 <p>Core Data三层设计方案：<a href="https://github.com/ChenYongJunM/CoreDataMultithread" target="_blank" rel="noopener">https://github.com/ChenYongJunM/CoreDataMultithread</a></p>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>FMDB使用分析</title>
+    <url>/2020/05/12/FMDB%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/</url>
+    <content><![CDATA[<h3 id="一、基本介绍"><a href="#一、基本介绍" class="headerlink" title="一、基本介绍"></a>一、基本介绍</h3><ul>
+<li>什么是FMDB  </li>
+</ul>
+<p>– FMDB是iOS平台的SQLite数据库框架<br>– FMDB以OC的方式封装了SQLite的C语言API</p>
+<ul>
+<li>FMDB常用类：  </li>
+</ul>
+<p>– <strong>FMDatabase</strong>：一个FMDatabase对象就代表一个单独的SQLite数据库用来执行SQL语句<br>– <strong>FMResultSet</strong>：使用FMDatabase执行查询后的结果集<br>– <strong>FMDatabaseQueue</strong>：用于在多线程中执行多个查询或更新，它是线程安全的  </p>
+<ul>
+<li>FMDB的优点  </li>
+</ul>
+<p>– 使用起来更加面向对象，省去了很多麻烦、冗余的C语言代码<br>– 对比苹果自带的Core Data框架，更加轻量级和灵活<br>– 提供了多线程安全的数据库操作方法，有效地防止数据混乱</p>
+<ul>
+<li>FMDB的缺点  </li>
+</ul>
+<p>– 它本身也存在一些问题，比如跨平台，因为它是用oc的语言封装的，所以<br>只能在ios开发的时候使用，如果想实现跨平台的操作，来降低开发的成本<br>和维护的成本,就需要使用比较原始的SQLite。</p>
+<h3 id="二、使用方法"><a href="#二、使用方法" class="headerlink" title="二、使用方法"></a>二、使用方法</h3><ul>
+<li><p>打开数据库<br>通过指定SQLite数据库文件路径来创建FMDatabase对象</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">FMDatabase *db = [FMDatabase databaseWithPath:path];</span><br><span class="line"><span class="keyword">if</span> (![db open]) &#123;</span><br><span class="line">  <span class="built_in">NSLog</span>(<span class="string">@"数据库打开失败！"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关于文件路径的三种情况：</p>
+<blockquote>
+<p>1.具体的文件路径,或是数据库的文件不存在时,fmdb会自己创建一个。<br>2.若文件路径为空字符串@””，会在临时目录创建一个空的数据库。<br>并且，当(FMDatabase)数据库断开连接时，数据库文件被删除。<br>3.若你传入的参数为NULL，则它会建立一个在内存中的数据库，数据库断开连接时，数据库文件被删除。  </p>
+</blockquote>
+</li>
+<li><p>执行更新：<br>在FMDB中,除查询以外的所有操作,都称为“更新”如：create、drop、insert、update、delete等。<br>FMDB数据库操作使用 executeUpdate: 方法执行更新,返回BOOL型。 </p>
+</li>
+</ul>
+<p>executeUpdate:用法  </p>
+<blockquote>
+<p>-(BOOL)executeUpdate:(NSString)sql, …<br>-(BOOL)executeUpdateWithFormat:(NSString)format, …<br>-(BOOL)executeUpdate:(NSString*)sql withArgumentsInArray:(NSArray *)arguments<br>示例<br>[db executeUpdate:@”UPDATE t_student SET age = ? WHERE name = ?;”, @20, @”Jack”]</p>
+</blockquote>
+<ul>
+<li>执行查询<br>查询方法<blockquote>
+<p>-(FMResultSet )executeQuery: (NSString)sql, …<br>-(FMResultSet )executeQueryWithFormat:(NSString)format, …<br>-(FMResultSet *)executeQuery:(NSString *)sql withArgumentsInArray:(NSArray *)arguments  </p>
+</blockquote>
+</li>
+</ul>
+<p>示例</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 查询数据</span></span><br><span class="line">FMResultSet *rs = [db executeQuery:<span class="string">@"SELECT * FROM t_student"</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 遍历结果集</span></span><br><span class="line"><span class="keyword">while</span> ([rs next]) &#123; </span><br><span class="line">  <span class="built_in">NSString</span> *name = [rs stringForColumn:<span class="string">@"name"</span>];</span><br><span class="line">  <span class="keyword">int</span> age = [rs intForColumn:<span class="string">@"age"</span>];</span><br><span class="line">  <span class="keyword">double</span> score = [rs doubleForColumn:<span class="string">@"score"</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>FMDatabaseQueue</li>
+</ul>
+<p>注意：  </p>
+<blockquote>
+<p>FMDatabase这个类是线程不安全的，如果在多个线程中同时使用一个<br>FMDatabase实例，会造成数据混乱等问题<br>为了保证线程安全，FMDB提供方便快捷的FMDatabaseQueue<br>FMDatabaseQueue的创建<br>FMDatabaseQueue *queue = [FMDatabaseQueue databaseQueueWithPath:path];</p>
+</blockquote>
+<p>简单使用</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">[queue inDatabase:^(FMDatabase *db) &#123; </span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jack"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Rose"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jim"</span>];</span><br><span class="line">  FMResultSet *rs = [db executeQuery:<span class="string">@"select * from t_student"</span>];</span><br><span class="line">  <span class="keyword">while</span> ([rs next]) &#123;</span><br><span class="line">    <span class="comment">// …</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
+<p>使用事务</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">[queue inTransaction:^(FMDatabase *db, <span class="built_in">BOOL</span> *rollback) &#123;</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jack"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Rose"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jim"</span>];</span><br><span class="line">  FMResultSet *rs = [db executeQuery:<span class="string">@"select * from t_student"</span>];</span><br><span class="line">  <span class="keyword">while</span> ([rs next]) &#123;</span><br><span class="line">    <span class="comment">// …</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
+<h3 id="三、数据库迁移"><a href="#三、数据库迁移" class="headerlink" title="三、数据库迁移"></a>三、数据库迁移</h3><p>使用FMDB与FMDBMigrationManager结合 进行数据库版本的升级  </p>
+<p>具体可以查看下面博客<br>iOS的数据库升级FMDBMigrationManager:<a href="https://www.jianshu.com/p/66bc680c4360" target="_blank" rel="noopener">https://www.jianshu.com/p/66bc680c4360</a><br>iOS 使用FMDB与FMDBMigrationManager结合 进行数据库版本的升级:<a href="https://blog.csdn.net/u014305730/article/details/82385126" target="_blank" rel="noopener">https://blog.csdn.net/u014305730/article/details/82385126</a>  </p>
+<h3 id="四、数据库加密"><a href="#四、数据库加密" class="headerlink" title="四、数据库加密"></a>四、数据库加密</h3><p>数据库加密一般有两种方式</p>
+<p>1、对所有数据进行加密  </p>
+<p>2、对数据库文件加密</p>
+<p>对比以上两种方式，第一种方式的常见做法是是将要存储的内容先加密然后存到数据库中，使用的时候将数据库解密，但是这样会消耗很多时间，大部分性能消耗在数据的加解密上，同时，第二种方式，SQLite本身支持加密功能(免费版的不支持) ，SQLCipher是一个开源的SQLite加密扩展，支持对db文件进行256位的AES加密，通常我们会用FMDB这个工具库，FMDB对原生的SQLite进行了封装，提供了面向对象的方式对数据库操作，同时FMDB 也提供了对 SQLCipher 的支持。（在github上集成fmdb上可以看到pod ’fmdb/sqlCipher‘）  </p>
+<p>FMDB数据库加密:<a href="https://www.jianshu.com/p/0c38bf93dcc0" target="_blank" rel="noopener">https://www.jianshu.com/p/0c38bf93dcc0</a></p>
+<h3 id="五、示例代码"><a href="#五、示例代码" class="headerlink" title="五、示例代码"></a>五、示例代码</h3><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="built_in">BOOL</span>)openDB &#123;</span><br><span class="line">    <span class="built_in">NSString</span> *path = [<span class="built_in">NSSearchPathForDirectoriesInDomains</span>(<span class="built_in">NSDocumentDirectory</span>, <span class="built_in">NSUserDomainMask</span>, <span class="literal">YES</span>).lastObject stringByAppendingPathComponent:<span class="string">@"database.sqlite"</span>];</span><br><span class="line">    FMDatabase *db = [FMDatabase databaseWithPath:path];</span><br><span class="line">    _db = db;</span><br><span class="line">    <span class="keyword">if</span> ([db open]) &#123;</span><br><span class="line">        <span class="built_in">BOOL</span> result = [db executeUpdate:<span class="string">@"CREATE TABLE IF NOT EXISTS t_student (id integer PRIMARY KEY AUTOINCREMENT, name text NOT NULL, age integer NOT NULL);"</span>];</span><br><span class="line">        <span class="keyword">if</span> (result) &#123;</span><br><span class="line">            <span class="built_in">NSLog</span>(<span class="string">@"表创建成功"</span>);</span><br><span class="line">            [db close];</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">NSLog</span>(<span class="string">@"表创建失败"</span>);</span><br><span class="line">             [db close];</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">NSLog</span>(<span class="string">@"打开失败"</span>);</span><br><span class="line">         [db close];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)add &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"INSERT INTO t_student (name, age) VALUES (?,?);"</span>, <span class="string">@"tom"</span>, @(arc4random_uniform(<span class="number">40</span>))];</span><br><span class="line">        <span class="comment">//    [self.db executeUpdate:@"INSERT INTO t_student (name, age) VALUES (?,?);" withArgumentsInArray:@[@"tom",@(arc4random_uniform(40))]];</span></span><br><span class="line">        <span class="comment">//    [self.db executeUpdateWithFormat:@"INSERT INTO t_student (name, age) VALUES (%@,%d);", @"tom", @(arc4random_uniform(40))];</span></span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)deleteStudent:(<span class="built_in">NSInteger</span>)ID &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"delete from t_student where id = ?;"</span>, @(ID)];</span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)update:(Student *)s &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        s.age = s.age - <span class="number">1</span>;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"update t_student set age = ? where id = ?;"</span>,s.age, s.ID];</span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)query &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        FMResultSet *resultSet = [<span class="keyword">self</span>.db executeQuery:<span class="string">@"SELECT * FROM t_student;"</span>];</span><br><span class="line">        <span class="built_in">NSMutableArray</span> *tmp = [<span class="built_in">NSMutableArray</span> array];</span><br><span class="line">        <span class="keyword">while</span> ([resultSet next]) &#123;</span><br><span class="line">            <span class="keyword">int</span> ID = [resultSet intForColumn:<span class="string">@"id"</span>];</span><br><span class="line">            <span class="built_in">NSString</span> *name = [resultSet stringForColumn:<span class="string">@"name"</span>];</span><br><span class="line">            <span class="keyword">int</span> age = [resultSet intForColumn:<span class="string">@"age"</span>];</span><br><span class="line">            </span><br><span class="line">            Student *s = [[Student alloc]init];</span><br><span class="line">            s.ID = ID;</span><br><span class="line">            s.name = name;</span><br><span class="line">            s.age = age;</span><br><span class="line">            </span><br><span class="line">            [tmp addObject:s];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">self</span>.students = tmp;</span><br><span class="line">        </span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>iOS开发数据库篇—FMDB简单介绍:<a href="https://www.cnblogs.com/wendingding/p/3871848.html" target="_blank" rel="noopener">https://www.cnblogs.com/wendingding/p/3871848.html</a></p>
 ]]></content>
       <categories>
         <category>iOS</category>
@@ -584,6 +483,107 @@
       </categories>
   </entry>
   <entry>
+    <title>iOS面试题收录（一）</title>
+    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%80%EF%BC%89/</url>
+    <content><![CDATA[<p>主题：是什么？</p>
+<h4 id="关键字const什么含义？"><a href="#关键字const什么含义？" class="headerlink" title="关键字const什么含义？"></a>关键字const什么含义？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> *a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> *a;</span><br><span class="line"><span class="keyword">int</span> * <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> * <span class="keyword">const</span> a;</span><br></pre></td></tr></table></figure>
+
+<p>1&gt;. 前两个的作用是一样：a 是一个常整型数<br>2&gt;. 第三、四个意味着 a 是一个指向常整型数的指针(整型数是不可修改的，但指针可以)<br>3&gt;. 第五个的意思：a 是一个指向整型数的常指针(指针指向的整型数是可以修改的，但指针是不可修改的)<br>4&gt;. 最后一个意味着：a 是一个指向常整型数的常指针(指针指向的整型数是不可修改的，同时指针也是不可修改的)</p>
+<h4 id="import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？"><a href="#import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？" class="headerlink" title="#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？"></a>#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？</h4><ol>
+<li><p>#import是Objective-C导入头文件的关键字，#include是C/C++导入头文件的关键字，使用#import头文件会自动只导入一次，不会重复导入。</p>
+</li>
+<li><p>@class告诉编译器某个类的声明，当执行时，才去查看类的实现文件，可以解决头文件的相互包含。</p>
+</li>
+<li><p>#import&lt;&gt;用来包含系统的头文件，#import””用来包含用户头文件。</p>
+</li>
+</ol>
+<h4 id="property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？"><a href="#property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？" class="headerlink" title="@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？"></a>@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？</h4><p>@property 的本质是:@property = ivar + getter + setter</p>
+<p>“属性” (property)有两大概念：ivar（实例变量）、getter+setter（存取方法）</p>
+<p>“属性” (property)作为 Objective-C 的一项特性，主要的作用就在于封装对象中的数据。 Objective-C 对象通常会把其所需要的数据保存为各种实例变量。实例变量一般通过“存取方法”(access method)来访问。其中，“获取方法” (getter)用于读取变量值，而“设置方法” (setter)用于写入变量值。</p>
+<h4 id="property中有哪些属性关键字以及作用？"><a href="#property中有哪些属性关键字以及作用？" class="headerlink" title="@property中有哪些属性关键字以及作用？"></a>@property中有哪些属性关键字以及作用？</h4><p><strong>线程安全</strong></p>
+<p><strong>nonatomic ：</strong>非原子操作。决定编译器生成的setter和getter方法是否是原子操作，一般使用nonatomic，效率高。<br><strong>atomic：</strong>多线程安全，但是性能低</p>
+<p><strong>内存管理</strong></p>
+<p><strong>strong：</strong>持有特性。setter方法将传入参数先保留，再赋值，传入参数的retaincount会+1。<br><strong>copy ：</strong>拷贝特性。setter方法将传入对象复制一份，需要完全一份新的变量时。<br><strong>assign：</strong>用于基本数据类型<br><strong>retain</strong>：相当于ARC中的strong</p>
+<p><strong>读写操作</strong></p>
+<p><strong>readwrite：</strong>可读可写特性。需要生成getter方法和setter方法<br><strong>readonly：</strong>只读特性。只会生成getter方法，不会生成setter方法，不希望属性在类外改变。</p>
+<h4 id="什么情况使用-weak-关键字，相比-assign-有什么不同？"><a href="#什么情况使用-weak-关键字，相比-assign-有什么不同？" class="headerlink" title="什么情况使用 weak 关键字，相比 assign 有什么不同？"></a>什么情况使用 weak 关键字，相比 assign 有什么不同？</h4><p>1&gt;.在 ARC 中,在有可能出现循环引用的时候,往往要通过让其中一端使用 weak 来解决,比如: delegate 代理属性。<br>2&gt;.自身已经对它进行一次强引用,没有必要再强引用一次,此时也会使用 weak,自定义 IBOutlet 控件属性一般也使用 weak（因为父控件的subViews数组已经对它有一个强引用）。</p>
+<p>不同点：<br>assign 可以用非 OC 对象，而 weak 必须用于 OC 对象。<br>weak 表明该属性定义了一种“非拥有关系”。在属性所指的对象销毁时，属性值会自动清空(nil)。</p>
+<h4 id="用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？"><a href="#用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？" class="headerlink" title="用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？"></a>用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？</h4><p>用 @property 声明 NSString、NSArray、NSDictionary 经常使用 copy 关键字，是因为他们有对应的可变类型：NSMutableString、NSMutableArray、NSMutableDictionary，他们之间可能进行赋值操作（就是把可变的赋值给不可变的），为确保对象中的字符串值不会无意间变动，应该在设置新属性值时拷贝一份。</p>
+<p>1&gt;. 因为父类指针可以指向子类对象,使用 copy 的目的是为了让本对象的属性不受外界影响,使用 copy 无论给我传入是一个可变对象还是不可对象,我本身持有的就是一个不可变的副本。<br>2&gt;. 如果我们使用是 strong ,那么这个属性就有可能指向一个可变对象,如果这个可变对象在外部被修改了,那么会影响该属性。<br>总结：使用copy的目的是，防止把可变类型的对象赋值给不可变类型的对象时，可变类型对象的值发送变化会无意间篡改不可变类型对象原来的值。</p>
+<h4 id="浅拷贝和深拷贝的区别？"><a href="#浅拷贝和深拷贝的区别？" class="headerlink" title="浅拷贝和深拷贝的区别？"></a>浅拷贝和深拷贝的区别？</h4><p><strong>浅拷贝：</strong>对一个对象地址的拷贝。源对象和副本对象是同一对象<br><strong>深拷贝：</strong>对一个对象的拷贝。源对象和副本对象是不同的两个对象</p>
+<h4 id="self-跟self-gt-什么区别？"><a href="#self-跟self-gt-什么区别？" class="headerlink" title="self.跟self-&gt;什么区别？"></a>self.跟self-&gt;什么区别？</h4><p>1&gt;. self.是调用get方法或者set放<br>2&gt;. self是当前本身，是一个指向当前对象的指针<br>3&gt;. self-&gt;是直接访问成员变量</p>
+<h4 id="一个objc对象的isa的指针指向什么？有什么作用？"><a href="#一个objc对象的isa的指针指向什么？有什么作用？" class="headerlink" title="一个objc对象的isa的指针指向什么？有什么作用？"></a>一个objc对象的isa的指针指向什么？有什么作用？</h4><p>指向他的类对象,从而可以找到对象上的方法</p>
+<h4 id="frame-和-bounds-有什么不同？"><a href="#frame-和-bounds-有什么不同？" class="headerlink" title="frame 和 bounds 有什么不同？"></a>frame 和 bounds 有什么不同？</h4><p><strong>frame：</strong>该view在父view坐标系统中的位置和大小。(参照点是父view的坐标系统)</p>
+<p><strong>bounds：</strong>该view在本身坐标系统中的位置和大小。(参照点是本身坐标系统)</p>
+<h4 id="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"><a href="#Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？" class="headerlink" title="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"></a>Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？</h4><p>OC不可以多继承，OC是单继承。有时可以用分类和协议来代替多继承<br>可以实现多个接口（协议）<br>Category是类别；一般情况用分类好，用Category去重写类的方法，仅对本Category有效，不会影响到其他类与原有类的关系。</p>
+<h4 id="Object-C有私有方法吗？私有变量呢？"><a href="#Object-C有私有方法吗？私有变量呢？" class="headerlink" title="Object-C有私有方法吗？私有变量呢？"></a>Object-C有私有方法吗？私有变量呢？</h4><p>1&gt;.OC没有类似@private的修饰词来修饰方法，只要写在.h文件中，就是公共方法<br>2&gt;. 如果你不在.h文件中声明，只在.m文件中实现，或在.m文件的Class Extension里声明，那么基本上和私有方法差不多，可以使用类扩展（Extension）来增加私有方法和私有变量<br>3&gt;. 使用private修饰的全局变量是私有变量</p>
+<h4 id="用伪代码写一个线程安全的单例模式"><a href="#用伪代码写一个线程安全的单例模式" class="headerlink" title="用伪代码写一个线程安全的单例模式"></a>用伪代码写一个线程安全的单例模式</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">static</span> XXManager * instance = <span class="literal">nil</span>;</span><br><span class="line">+ (<span class="keyword">instancetype</span>)shareInstance &#123;</span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [[<span class="keyword">self</span> alloc] init];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">id</span>)allocWithZone:(<span class="keyword">struct</span> _NSZone *)zone &#123;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [<span class="keyword">super</span> allocWithZone:zone];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line">- (<span class="keyword">id</span>)copyWithZone:(<span class="built_in">NSZone</span> *)zone &#123;</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="category-类别-和-extension-扩展-的区别"><a href="#category-类别-和-extension-扩展-的区别" class="headerlink" title="category(类别) 和 extension(扩展) 的区别"></a>category(类别) 和 extension(扩展) 的区别</h4><p>1&gt;. 类别有名字，类扩展没有分类名字，是一种特殊的分类。<br>2&gt;. 类别只能扩展方法（属性仅仅是声明，并没真正实现），类扩展可以扩展属性、成员变量和方法。<br>3&gt;. 继承可以增加，修改或者删除方法，并且可以增加属性。</p>
+<h4 id="delegate-和-notification-的区别"><a href="#delegate-和-notification-的区别" class="headerlink" title="delegate 和 notification 的区别"></a>delegate 和 notification 的区别</h4><p>二者都用于传递消息，不同之处主要在于一个是一对一的，另一个是一对多的<br><strong>notification：</strong>不需要两者之间有联系,实现一对多消息的转发<br><strong>delegate：</strong>需要两者之间必须建立联系，不然没法调用代理的方法</p>
+<h4 id="Objective-C-如何对内存管理的，说说你的看法和解决方法？"><a href="#Objective-C-如何对内存管理的，说说你的看法和解决方法？" class="headerlink" title="Objective-C 如何对内存管理的，说说你的看法和解决方法？"></a>Objective-C 如何对内存管理的，说说你的看法和解决方法？</h4><p>Objective-C的内存管理主要有三种方式ARC(自动内存计数)、手动内存计数、内存池。<br>1&gt;. 自动内存计数ARC：由Xcode自动在App编译阶段，在代码中添加内存管理代码。<br>2&gt;. 手动内存计数MRC：遵循内存谁申请、谁释放；谁添加，谁释放的原则。<br>3&gt;. 内存释放池Release Pool：把需要释放的内存统一放在一个池子中，当池子被抽干后(drain)，池子中所有的内存空间也被自动释放掉。内存池的释放操作分为自动和手动。自动释放受runloop机制影响。</p>
+<h4 id="GCD-与-NSOperation-的区别"><a href="#GCD-与-NSOperation-的区别" class="headerlink" title="GCD 与 NSOperation 的区别"></a>GCD 与 NSOperation 的区别</h4><p><strong>NSOperation:</strong>相对于GCD来说，更加强大。可以给operation之间添加依赖关系、取消一个正在执行的operation、暂停和恢复operationQueue等</p>
+<p><strong>GCD:</strong> 是一种更轻量级的，以FIFO(先进先出，后进后出)的顺序执行并发任务。使用GCD我们并不用关心任务的调度情况，而是系统会自动帮我们处理。但是GCD的短板也是非常明显的，比如我们想要给任务之间添加依赖关系、取消或者暂停一个正在执行的任务时就会变得束手无策。</p>
+<h4 id="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"><a href="#OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？" class="headerlink" title="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"></a>OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建线程的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="built_in">NSThread</span> detachNewThreadSelector:<span class="literal">nil</span> toTarget:<span class="literal">nil</span> withObject:<span class="literal">nil</span>]</span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorInBackground:<span class="literal">nil</span> withObject:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSThread</span> alloc] initWithTarget:<span class="literal">nil</span> selector:<span class="literal">nil</span> object:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_global_queue(<span class="number">0</span>, <span class="number">0</span>), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> new] addOperation:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 主线程中执行代码的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorOnMainThread:<span class="literal">nil</span> withObject:<span class="literal">nil</span> waitUntilDone:<span class="literal">YES</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_main_queue(), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> mainQueue] addOperation:<span class="literal">nil</span>];</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="runloop-和线程有什么关系"><a href="#runloop-和线程有什么关系" class="headerlink" title="runloop 和线程有什么关系?"></a>runloop 和线程有什么关系?</h4><p>runloop与线程是一一对应的，一个runloop对应一个核心的线程，为什么说是核心的，是因为runloop是可以嵌套的，但是核心的只能有一个，他们的关系保存在一个全局的字典里。 runloop是来管理线程的，当线程的runloop被开启后，线程会在执行完任务后进入休眠状态，有了任务就会被唤醒去执行任务。 runloop在第一次获取时被创建，在线程结束时被销毁。 对于主线程来说，runloop在程序一启动就默认创建好了。 对于子线程来说，runloop是懒加载的，只有当我们使用的时候才会创建，所以在子线程用定时器要注意：确保子线程的runloop被创建，不然定时器不会回调。</p>
+<h4 id="介绍下layoutSubview和drawRect"><a href="#介绍下layoutSubview和drawRect" class="headerlink" title="介绍下layoutSubview和drawRect"></a>介绍下layoutSubview和drawRect</h4><p>layoutSubviews调用情况</p>
+<ul>
+<li><p>init初始化UIView不会触发调用 </p>
+</li>
+<li><p>addSubview会触发调用 </p>
+</li>
+<li><p>改变view的width和height的时候回触发</p>
+</li>
+<li><p>调用 一个UIScrollView滚动会触发调用 </p>
+</li>
+<li><p>旋转screen会触发调用 </p>
+</li>
+<li><p>改变一个UIView大小的时候会触发</p>
+</li>
+<li><p>superView的layoutSubviews事件 直接调用setLayoutSubviews会触发调用 </p>
+</li>
+<li><p>-(void)viewWillAppear:(BOOL)animated会触发一次调用</p>
+</li>
+<li><p>-(void)viewDidAppear:(BOOL)animated 看情况</p>
+<p>可能有调用 drawRect调用情况 </p>
+</li>
+<li><p>如果UIView没有设置frame大小，直接导致drawRect不能被自动调用。 </p>
+</li>
+<li><p>drawRect在loadView和viewDidLoad这两个方法之后调用 调用sizeToFit后自动调用drawRect </p>
+</li>
+<li><p>通过设置contentMode值为UIViewContentModeRedraw。那么每次设置或者更改frame自动调用drawRect。 </p>
+</li>
+<li><p>直接调用setNeedsDisplay或者setNeedsDisplayInRect会触发调用</p>
+</li>
+</ul>
+<h4 id="UIview-和CAlayer-是什么关系-你-CLayer做过什么"><a href="#UIview-和CAlayer-是什么关系-你-CLayer做过什么" class="headerlink" title="UIview 和CAlayer 是什么关系? 你 CLayer做过什么?"></a>UIview 和CAlayer 是什么关系? 你 CLayer做过什么?</h4><p>区别： 首先UIView可以响应事件，Layer不可以.</p>
+<p>关系：</p>
+<ol>
+<li>UIView是CALayer的delegate </li>
+<li>UIView主要处理事件，CALayer负责绘制就更好 </li>
+<li>每个 UIView 内部都有一个 CALayer 在背后提供内容的绘制和显示，并且 UIView 的尺寸样式都由内部的 Layer 所提供。两者都有树状层级结构，layer 内部有 SubLayers，View 内部有 SubViews.但是 Layer 比 View 多了个AnchorPoint </li>
+</ol>
+<p>用layer做过什么：创建隐式动画 绘制边框圆角</p>
+<h4 id="iOS-UIViewController的完整生命周期"><a href="#iOS-UIViewController的完整生命周期" class="headerlink" title="iOS UIViewController的完整生命周期?"></a>iOS UIViewController的完整生命周期?</h4><p>按照执行顺序排列：</p>
+<p>1&gt;. <code>initWithCoder：</code>通过nib文件初始化时触发。<br>2&gt;. <code>awakeFromNib：</code>nib文件被加载的时候，会发生一个<code>awakeFromNib</code>的消息到nib文件中的每个对象。<br>3&gt;. <code>loadView：</code>开始加载视图控制器自带的view。<br>4&gt;. <code>viewDidLoad：</code>视图控制器的view被加载完成。<br>5&gt;. <code>viewWillAppear：</code>视图控制器的view将要显示在window上。<br>6&gt;. <code>updateViewConstraints：</code>视图控制器的view开始更新AutoLayout约束。<br>7&gt;. <code>viewWillLayoutSubviews：</code>视图控制器的view将要更新内容视图的位置。<br>8&gt;. <code>viewDidLayoutSubviews：</code>视图控制器的view已经更新视图的位置。<br>9&gt;. <code>viewDidAppear：</code>视图控制器的view已经展示到window上。<br>10&gt;. <code>viewWillDisappear：</code>视图控制器的view将要从window上消失。<br>11&gt;.<code>viewDidDisappear：</code>视图控制器的view已经从window上消失。</p>
+<h4 id="tableView的重用机制？"><a href="#tableView的重用机制？" class="headerlink" title="tableView的重用机制？"></a>tableView的重用机制？</h4><p>UITableView 通过重用单元格来达到节省内存的目的: 通过为每个单元格指定一个重用标识符，即指定了单元格的种类,当屏幕上的单元格滑出屏幕时，系统会把这个单元格添加到重用队列中，等待被重用，当有新单元格从屏幕外滑入屏幕内时，从重用队列中找看有没有可以重用的单元格，如果有，就拿过来用，如果没有就创建一个来使用</p>
+<h4 id="NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的"><a href="#NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的" class="headerlink" title="NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?"></a>NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?</h4><ol>
+<li><p>下载 NSURLConnection下载文件时，先是将整个文件下载到内存，然后再写入到沙盒，如果文件比较大，就会出现内存暴涨的情况。 而使用NSURLSessionUploadTask下载文件，会默认下载到沙盒中的tem文件中，不会出现内存暴涨的情况，但是在下载完成后会把tem中的临时文件删除，需要在初始化任务方法时，在completionHandler回调中增加保存文件的代码 </p>
+</li>
+<li><p>请求方法的控制 NSURLConnection实例化对象，实例化开始，默认请求就发送(同步发送),不需要调用start方法。而cancel可以停止请求的发送，停止后不能继续访问，需要创建新的请求。 NSURLSession有三个控制方法，取消(cancel)、暂停(suspend)、继续(resume)，暂停以后可以通过继续恢复当前的请求任务。 使用NSURLSession进行断点下载更加便捷. NSURLSession的构造方法（sessionWithConfiguration:delegate:delegateQueue）中有一个NSURLSessionConfiguration类的参数可以设置配置信息，其决定了cookie，安全和高速缓存策略，最大主机连接数，资源管理，网络超时等配置。NSURLConnection不能进行这个配置，相比较与NSURLConnection依赖与一个全局的配置对象，缺乏灵活性而言，NSURLSession有很大的改进</p>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>iOS面试汇总</category>
+      </categories>
+  </entry>
+  <entry>
     <title>iOS面试题收录（三）</title>
     <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%89%EF%BC%89/</url>
     <content><![CDATA[<p>主题：高级问题</p>
@@ -749,6 +749,71 @@
 </ul>
 </li>
 </ol>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>图像绘制原理</title>
+    <url>/2020/05/12/%E5%9B%BE%E5%83%8F%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86/</url>
+    <content><![CDATA[<p><img src="draw_1.png" alt=""></p>
+<ul>
+<li><p><a href="">CoreAnimation</a></p>
+</li>
+<li><p><a href="">CoreGraphics</a>    </p>
+</li>
+<li><p><a href="">OpenGL ES</a> </p>
+</li>
+</ul>
+<h3 id="CoreAnimation"><a href="#CoreAnimation" class="headerlink" title="CoreAnimation"></a>CoreAnimation</h3><p>打开<code>QuartzCore</code>的头文件可以看到,<code>QuartzCore</code>就是引用了<code>CoreAnimation</code>的头文件，所以这两个实际上是同一个，是雌雄同体。。。。<br><code>CoreAnimation</code>中文名核心动画，看名字是负责动画的，其实不然，作用相当大，来看看他的头文件</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> COREANIMATION_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COREANIMATION_H</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QuartzCore/CABase.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QuartzCore/CATransform3D.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __OBJC__</span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;Foundation/Foundation.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAAnimation.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CADisplayLink.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEAGLLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterBehavior.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterCell.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAGradientLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CALayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAMediaTiming.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAMediaTimingFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAReplicatorLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAScrollLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAShapeLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATextLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATiledLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransaction.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransform3D.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransformLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAValueFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* COREANIMATION_H */</span></span></span><br></pre></td></tr></table></figure>
+
+<p>以CA开头的都是他的类，其中带layer的类是构成UIView的基石，用来呈现内容。其中：</p>
+<ul>
+<li>CAShapeLayer<br>用来根据CGPath来渲染的图层，这里CGPath就是上文中提到的CoreGraphics的一部分，比如常做的圆角，都是用cornerRadius来做，但是这是四个角都有的，要想做一个角的就得用他了。</li>
+<li>CATextLayer<br>这个layer可以呈现文字，包含了UILabel的功能，如果你闲的蛋疼，也可以用他来实现一个label。</li>
+<li>CAGradientLayer<br>是用来生成两种或更多颜色平滑渐变的。</li>
+<li>CAReplicatorLayer<br>是为了高效生成许多相似的图层。它会绘制一个或多个图层的子图层，并在每个复制体上应用不同的变换。</li>
+<li>CAScrollLayer<br>有点像UIScrollView，可以用来呈现比他大的内容。</li>
+<li>CATiledLayer<br>Tiled意思的瓷砖，就像铺地板一样，可以把一个很大的图片，切成一格一格的来呈现。</li>
+<li>CAEAGLLayer<br>用来进行OpenGL绘图的工作，需要有OpenGL的基础。</li>
+</ul>
+<p>CAAnimation类继承与NSObject，他是一个抽象类，并不直接负责动画，他有一个子类CAPropertyAnimation，也是抽象类。CAPropertyAnimation的两个子类才直接对layer层进行动画操作，其中CABasicAnimation负责基础动画，CAKeyframeAnimation负责关键帧动画。</p>
+<p>带有Emitter的类是负责粒子动画的类，可以用来做炫酷的粒子动画。</p>
+<p>带有Trans的类负责仿射动画，所谓仿射，就是模仿阳光照射，就有了立体的感觉，可以做三维空间的变换，不像CAAnimation，只能在平面上动手脚。</p>
+<p>CAMediaTiming是一个协议，里边规定了几个属性，用来精确控制时间，animation和layer实现了这个协议。</p>
+<h3 id="CoreGraphics-Quartz2D"><a href="#CoreGraphics-Quartz2D" class="headerlink" title="CoreGraphics/Quartz2D"></a>CoreGraphics/Quartz2D</h3><p>这是一个C语言写就的库,CoreGraphics的类名都是以CG开头的，平时所用的CGRect、CGPoint就在CGGeometry这个几何相关的类中定义，CGFont类则被封装成了UIFont，CGImage构成了UIImage，CGContext是绘图的上下文等等。所以CoreGraphics是系统绘制界面、文字、图像等UI的基础。</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> COREGRAPHICS_H_</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COREGRAPHICS_H_</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGBase.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGAffineTransform.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGBitmapContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColor.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColorConversionInfo.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColorSpace.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGDataConsumer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGDataProvider.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGError.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGFont.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGGeometry.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGGradient.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGImage.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFArray.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFContentStream.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFDictionary.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFDocument.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFObject.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFOperatorTable.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFPage.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFScanner.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFStream.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFString.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPath.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPattern.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGShading.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span>  <span class="comment">/* COREGRAPHICS_H_ */</span></span></span><br></pre></td></tr></table></figure>
+
+<p>这是一个基于CoreGraphics API的绘图框架，系统中并没有Quartz2D.framework这么一个库，他只是包含了CoreGraphics中的部分API，是一个抽象的引擎，并不是一个实体，他在iOS和MAC系统中负责：</p>
+<ul>
+<li>绘制图形 : 线条\三角形\矩形\圆\弧等</li>
+<li>绘制文字</li>
+<li>绘制\生成图片(图像)</li>
+<li>读取\生成PDF</li>
+<li>截图\裁剪图片</li>
+<li>自定义UI控件</li>
+<li>绘制渐变</li>
+</ul>
+<p>PS：因为是API是C语言写成的，所以ARC并不起作用，仍然需要手动管理内存。</p>
+<h3 id="OpenGL-ES"><a href="#OpenGL-ES" class="headerlink" title="OpenGL ES"></a>OpenGL ES</h3><p>OpenGL ES是应用程序编程接口，该接口描述了方法、结构、函数应具有的行为以及应该如何被使用的语义。也就是说它只定义了一套规范，具体的实现由设备制造商根据规范去做。因为制造商可以自由的实现Open GL ES，所以不同系统实现的OpenGL ES也存在着巨大的性能差异。</p>
+<h3 id="绘图框架"><a href="#绘图框架" class="headerlink" title="绘图框架"></a>绘图框架</h3><p><strong>CoreGraphics/Quartz2D</strong>: QuartZ 2D是苹果公司开发的一套API，它是Core Graphics Framework的一部分，是一套基于C的API框架，使用了Quartz作为绘图引擎。它提供了低级别、轻量级、高保真度的2D渲染。该框架可以用于基于路径的绘图、变换、颜色管理、脱屏渲染，模板、渐变、遮蔽、图像数据管理、图像的创建、遮罩以及PDF文档的创建、显示和分析。<br><strong>OpenGL ES</strong>: OpenGL ES是跨平台的图形API，属于OpenGL的一个简化版本</p>
+<p><strong>Metal</strong>: 进行图像处理的整体框架(苹果新推出的替代OpenGL)</p>
+<p><strong>注意：网上很多人说<code>UIBeizerPath</code>也是绘图框架，我觉得<code>UIBeizerPath</code>只是对<code>CoreGraphics</code>的<code>path</code>做了封装</strong></p>
+<h4 id="上下文？-什么是上下文？"><a href="#上下文？-什么是上下文？" class="headerlink" title="上下文？ 什么是上下文？"></a>上下文？ 什么是上下文？</h4><p>有许多方式获得一个图形上下文，这里我介绍两种最为常用的获取方法。</p>
+<p>第一种方法就是创建一个图片类型的上下文。调用UIGraphicsBeginImageContextWithOptions函数就可获得用来处理图片的图形上下文。利用该上下文，你就可以在其上进行绘图，并生成图片。调用UIGraphicsGetImageFromCurrentImageContext函数可从当前上下文中获取一个UIImage对象。记住在你所有的绘图操作后别忘了调用UIGraphicsEndImageContext函数关闭图形上下文。</p>
+<p>第二种方法是利用cocoa为你生成的图形上下文。当你子类化了一个UIView并实现了自己的drawRect：方法后，一旦drawRect：方法被调用，Cocoa就会为你创建一个图形上下文，此时你对图形上下文的所有绘图操作都会显示在UIView上。</p>
+<p>判断一个上下文是否为当前图形上下文需要注意的几点：<br>1.UIGraphicsBeginImageContextWithOptions函数不仅仅是创建了一个适用于图形操作的上下文，并且该上下文也属于当前上下文。<br>2.当drawRect方法被调用时，UIView的绘图上下文属于当前图形上下文。<br>3.回调方法所持有的context：参数并不会让任何上下文成为当前图形上下文。此参数仅仅是对一个图形上下文的引用罢了。    </p>
+<p>Graphics Context的几种类型</p>
+<ol>
+<li>Bitmap Graphics Context  </li>
+<li>PDF Graphics Context  </li>
+<li>Window Graphics Context  </li>
+<li>Layer Context  </li>
+<li>Post Graphics Context  </li>
+</ol>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>iOS绘图框架CoreGraphics分析:<a href="http://www.cocoachina.com/articles/20187" target="_blank" rel="noopener">http://www.cocoachina.com/articles/20187</a><br>傻傻分不清：Quartz2D、QuartzCore、CoreAnimation、CoreImage、CoreGraphics:<a href="https://www.jianshu.com/p/397690fd4555" target="_blank" rel="noopener">https://www.jianshu.com/p/397690fd4555</a><br>iOS图像处理之Core Graphics和OpenGL ES小析:<a href="https://www.jianshu.com/p/f66a7ca326dd" target="_blank" rel="noopener">https://www.jianshu.com/p/f66a7ca326dd</a><br>iOS绘图教程 各种绘制原理：<a href="https://blog.csdn.net/moxi_wang/article/details/48473033" target="_blank" rel="noopener">https://blog.csdn.net/moxi_wang/article/details/48473033</a><br>iOS 图像渲染原理：<a href="http://www.cocoachina.com/cms/wap.php?action=article&id=25510" target="_blank" rel="noopener">http://www.cocoachina.com/cms/wap.php?action=article&amp;id=25510</a><br>iOS端K线系列之绘制方法比较（CoreGraphics、CoreAnimation）:<a href="https://www.jianshu.com/p/ed681ac5c89c" target="_blank" rel="noopener">https://www.jianshu.com/p/ed681ac5c89c</a><br>iOS 图形绘制框架 ——UIBezierPath 、Core Graphics 和OpenGL：<a href="https://www.jianshu.com/p/0cfd271fc6db" target="_blank" rel="noopener">https://www.jianshu.com/p/0cfd271fc6db</a></p>
 ]]></content>
       <categories>
         <category>iOS</category>

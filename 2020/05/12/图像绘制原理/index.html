@@ -83,16 +83,18 @@
 
 
 
-<meta name="description" content="一、UI视图1.1 、事件传递机制 1.2 、UI绘制原理 1.3 、异步绘制原理 1.4 、流失页面的性能优化 1.5 、离屏渲染 二、OC语言2.1 、KVO 2.2、 KVC 2.3、分类 2.4、 关联对象 三、Runtime3.1、 对象、类、元祖对象 3.2、 消息传递机制 3.3、消息转发流程 3.4、Method-Swizzing 四、内存4.1、 引用计数表 4.2、 弱引用表">
+<meta name="description" content="CoreAnimation  CoreGraphics      OpenGL ES    CoreAnimation打开QuartzCore的头文件可以看到,QuartzCore就是引用了CoreAnimation的头文件，所以这两个实际上是同一个，是雌雄同体。。。。CoreAnimation中文名核心动画，看名字是负责动画的，其实不然，作用相当大，来看看他的头文件 123456789101">
 <meta property="og:type" content="article">
-<meta property="og:title" content="iOS高级必备知识">
-<meta property="og:url" content="http://yoursite.com/2020/05/08/iOS%E9%AB%98%E7%BA%A7%E5%BF%85%E5%A4%87%E7%9F%A5%E8%AF%86/index.html">
+<meta property="og:title" content="图像绘制原理">
+<meta property="og:url" content="http://yoursite.com/2020/05/12/%E5%9B%BE%E5%83%8F%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86/index.html">
 <meta property="og:site_name" content="立码定天下">
-<meta property="og:description" content="一、UI视图1.1 、事件传递机制 1.2 、UI绘制原理 1.3 、异步绘制原理 1.4 、流失页面的性能优化 1.5 、离屏渲染 二、OC语言2.1 、KVO 2.2、 KVC 2.3、分类 2.4、 关联对象 三、Runtime3.1、 对象、类、元祖对象 3.2、 消息传递机制 3.3、消息转发流程 3.4、Method-Swizzing 四、内存4.1、 引用计数表 4.2、 弱引用表">
-<meta property="article:published_time" content="2020-05-08T13:21:01.000Z">
-<meta property="article:modified_time" content="2020-05-11T01:47:05.483Z">
+<meta property="og:description" content="CoreAnimation  CoreGraphics      OpenGL ES    CoreAnimation打开QuartzCore的头文件可以看到,QuartzCore就是引用了CoreAnimation的头文件，所以这两个实际上是同一个，是雌雄同体。。。。CoreAnimation中文名核心动画，看名字是负责动画的，其实不然，作用相当大，来看看他的头文件 123456789101">
+<meta property="og:image" content="http://yoursite.com/2020/05/12/%E5%9B%BE%E5%83%8F%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86/draw_1.png">
+<meta property="article:published_time" content="2020-05-12T06:32:52.000Z">
+<meta property="article:modified_time" content="2020-05-12T06:37:02.858Z">
 <meta property="article:author" content="Lanht">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://yoursite.com/2020/05/12/%E5%9B%BE%E5%83%8F%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86/draw_1.png">
 
 
 
@@ -122,13 +124,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2020/05/08/iOS高级必备知识/"/>
+  <link rel="canonical" href="http://yoursite.com/2020/05/12/图像绘制原理/"/>
 
 
 
 
 
-  <title>iOS高级必备知识 | 立码定天下</title>
+  <title>图像绘制原理 | 立码定天下</title>
   
 
 
@@ -309,7 +311,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/08/iOS%E9%AB%98%E7%BA%A7%E5%BF%85%E5%A4%87%E7%9F%A5%E8%AF%86/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/12/%E5%9B%BE%E5%83%8F%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Lanht">
@@ -326,7 +328,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">iOS高级必备知识</h1>
+          <h1 class="post-title" itemprop="name headline">图像绘制原理</h1>
         
 
         <div class="post-meta">
@@ -338,8 +340,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-05-08T21:21:01+08:00">
-                2020-05-08
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-05-12T14:32:52+08:00">
+                2020-05-12
               </time>
             
 
@@ -398,55 +400,63 @@
       
 
       
-        <h3 id="一、UI视图"><a href="#一、UI视图" class="headerlink" title="一、UI视图"></a>一、UI视图</h3><p>1.1 、事件传递机制</p>
-<p>1.2 、UI绘制原理</p>
-<p>1.3 、异步绘制原理</p>
-<p>1.4 、流失页面的性能优化</p>
-<p>1.5 、离屏渲染</p>
-<h3 id="二、OC语言"><a href="#二、OC语言" class="headerlink" title="二、OC语言"></a>二、OC语言</h3><p>2.1 、KVO</p>
-<p>2.2、 KVC</p>
-<p>2.3、分类</p>
-<p>2.4、 关联对象</p>
-<h3 id="三、Runtime"><a href="#三、Runtime" class="headerlink" title="三、Runtime"></a>三、Runtime</h3><p>3.1、 对象、类、元祖对象</p>
-<p>3.2、 消息传递机制</p>
-<p>3.3、消息转发流程</p>
-<p>3.4、Method-Swizzing</p>
-<h3 id="四、内存"><a href="#四、内存" class="headerlink" title="四、内存"></a>四、内存</h3><p>4.1、 引用计数表</p>
-<p>4.2、 弱引用表</p>
-<p>4.3、 ARC，MRC</p>
-<p>4.4、 循环引用</p>
-<p>4.5、 内存管理</p>
-<h3 id="五、Block"><a href="#五、Block" class="headerlink" title="五、Block"></a>五、Block</h3><p>5.1、 Block本质</p>
-<p>5.2、 截获变量特性</p>
-<p>5.3、 内存管理</p>
-<p>5.4、 循环应用</p>
-<h3 id="六、多线程"><a href="#六、多线程" class="headerlink" title="六、多线程"></a>六、多线程</h3><p>6.1、 GCD，NSoperation</p>
-<p>6.2、 资源共享</p>
-<p>6.3、 线程同步</p>
-<p>6.4、 SpinLock</p>
-<h3 id="七、RunLoop"><a href="#七、RunLoop" class="headerlink" title="七、RunLoop"></a>七、RunLoop</h3><p>7.1、 事件循环</p>
-<p>7.2、 常驻线程</p>
-<h3 id="八、网络"><a href="#八、网络" class="headerlink" title="八、网络"></a>八、网络</h3><p>8.1、 HTTPS</p>
-<p>8.2、 对称加密算法</p>
-<p>8.3、 非对称加密算法</p>
-<p>8.4、 DNS解析</p>
-<p>8.5 HTTP，TCP</p>
-<h3 id="九、设计模式"><a href="#九、设计模式" class="headerlink" title="九、设计模式"></a>九、设计模式</h3><p>9.1、 桥接，适配器，命令</p>
-<p>9.2、 责任链，单例</p>
-<p>9.3、 六大设计原则</p>
-<h3 id="十、架构-框架"><a href="#十、架构-框架" class="headerlink" title="十、架构/框架"></a>十、架构/框架</h3><p>10.1、 MVVM，时长统计框架</p>
-<p>10.2、 图片缓存框架</p>
-<p>10.3、 PV量级10亿业务架构</p>
-<h3 id="十一、算法"><a href="#十一、算法" class="headerlink" title="十一、算法"></a>十一、算法</h3><p>11.1、 字符串反转</p>
-<p>11.2、 单链表反转</p>
-<p>11.3、 有序数组递归</p>
-<p>11.4、 无序数组找中位</p>
-<h3 id="十二、第三方库"><a href="#十二、第三方库" class="headerlink" title="十二、第三方库"></a>十二、第三方库</h3><p>12.1、 AFNETworking<br><strong>…</strong></p>
-<h3 id="十三、跨平台-最少会其一"><a href="#十三、跨平台-最少会其一" class="headerlink" title="十三、跨平台(最少会其一)"></a>十三、跨平台(最少会其一)</h3><p>13.1、 RN</p>
-<p>13.2、 Flutter</p>
-<p>13.3、 Weex</p>
-<h3 id="十四、加分项（不会也没事，会就更好）"><a href="#十四、加分项（不会也没事，会就更好）" class="headerlink" title="十四、加分项（不会也没事，会就更好）"></a>十四、加分项（不会也没事，会就更好）</h3><p>14.1、OpenGL ES</p>
-<p>14.2、逆向</p>
+        <p><img src="draw_1.png" alt=""></p>
+<ul>
+<li><p><a href="">CoreAnimation</a></p>
+</li>
+<li><p><a href="">CoreGraphics</a>    </p>
+</li>
+<li><p><a href="">OpenGL ES</a> </p>
+</li>
+</ul>
+<h3 id="CoreAnimation"><a href="#CoreAnimation" class="headerlink" title="CoreAnimation"></a>CoreAnimation</h3><p>打开<code>QuartzCore</code>的头文件可以看到,<code>QuartzCore</code>就是引用了<code>CoreAnimation</code>的头文件，所以这两个实际上是同一个，是雌雄同体。。。。<br><code>CoreAnimation</code>中文名核心动画，看名字是负责动画的，其实不然，作用相当大，来看看他的头文件</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> COREANIMATION_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COREANIMATION_H</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QuartzCore/CABase.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QuartzCore/CATransform3D.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __OBJC__</span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;Foundation/Foundation.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAAnimation.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CADisplayLink.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEAGLLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterBehavior.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterCell.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAGradientLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CALayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAMediaTiming.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAMediaTimingFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAReplicatorLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAScrollLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAShapeLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATextLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATiledLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransaction.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransform3D.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransformLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAValueFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* COREANIMATION_H */</span></span></span><br></pre></td></tr></table></figure>
+
+<p>以CA开头的都是他的类，其中带layer的类是构成UIView的基石，用来呈现内容。其中：</p>
+<ul>
+<li>CAShapeLayer<br>用来根据CGPath来渲染的图层，这里CGPath就是上文中提到的CoreGraphics的一部分，比如常做的圆角，都是用cornerRadius来做，但是这是四个角都有的，要想做一个角的就得用他了。</li>
+<li>CATextLayer<br>这个layer可以呈现文字，包含了UILabel的功能，如果你闲的蛋疼，也可以用他来实现一个label。</li>
+<li>CAGradientLayer<br>是用来生成两种或更多颜色平滑渐变的。</li>
+<li>CAReplicatorLayer<br>是为了高效生成许多相似的图层。它会绘制一个或多个图层的子图层，并在每个复制体上应用不同的变换。</li>
+<li>CAScrollLayer<br>有点像UIScrollView，可以用来呈现比他大的内容。</li>
+<li>CATiledLayer<br>Tiled意思的瓷砖，就像铺地板一样，可以把一个很大的图片，切成一格一格的来呈现。</li>
+<li>CAEAGLLayer<br>用来进行OpenGL绘图的工作，需要有OpenGL的基础。</li>
+</ul>
+<p>CAAnimation类继承与NSObject，他是一个抽象类，并不直接负责动画，他有一个子类CAPropertyAnimation，也是抽象类。CAPropertyAnimation的两个子类才直接对layer层进行动画操作，其中CABasicAnimation负责基础动画，CAKeyframeAnimation负责关键帧动画。</p>
+<p>带有Emitter的类是负责粒子动画的类，可以用来做炫酷的粒子动画。</p>
+<p>带有Trans的类负责仿射动画，所谓仿射，就是模仿阳光照射，就有了立体的感觉，可以做三维空间的变换，不像CAAnimation，只能在平面上动手脚。</p>
+<p>CAMediaTiming是一个协议，里边规定了几个属性，用来精确控制时间，animation和layer实现了这个协议。</p>
+<h3 id="CoreGraphics-Quartz2D"><a href="#CoreGraphics-Quartz2D" class="headerlink" title="CoreGraphics/Quartz2D"></a>CoreGraphics/Quartz2D</h3><p>这是一个C语言写就的库,CoreGraphics的类名都是以CG开头的，平时所用的CGRect、CGPoint就在CGGeometry这个几何相关的类中定义，CGFont类则被封装成了UIFont，CGImage构成了UIImage，CGContext是绘图的上下文等等。所以CoreGraphics是系统绘制界面、文字、图像等UI的基础。</p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> COREGRAPHICS_H_</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COREGRAPHICS_H_</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGBase.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGAffineTransform.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGBitmapContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColor.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColorConversionInfo.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColorSpace.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGDataConsumer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGDataProvider.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGError.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGFont.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGGeometry.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGGradient.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGImage.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFArray.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFContentStream.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFDictionary.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFDocument.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFObject.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFOperatorTable.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFPage.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFScanner.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFStream.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFString.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPath.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPattern.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGShading.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span>  <span class="comment">/* COREGRAPHICS_H_ */</span></span></span><br></pre></td></tr></table></figure>
+
+<p>这是一个基于CoreGraphics API的绘图框架，系统中并没有Quartz2D.framework这么一个库，他只是包含了CoreGraphics中的部分API，是一个抽象的引擎，并不是一个实体，他在iOS和MAC系统中负责：</p>
+<ul>
+<li>绘制图形 : 线条\三角形\矩形\圆\弧等</li>
+<li>绘制文字</li>
+<li>绘制\生成图片(图像)</li>
+<li>读取\生成PDF</li>
+<li>截图\裁剪图片</li>
+<li>自定义UI控件</li>
+<li>绘制渐变</li>
+</ul>
+<p>PS：因为是API是C语言写成的，所以ARC并不起作用，仍然需要手动管理内存。</p>
+<h3 id="OpenGL-ES"><a href="#OpenGL-ES" class="headerlink" title="OpenGL ES"></a>OpenGL ES</h3><p>OpenGL ES是应用程序编程接口，该接口描述了方法、结构、函数应具有的行为以及应该如何被使用的语义。也就是说它只定义了一套规范，具体的实现由设备制造商根据规范去做。因为制造商可以自由的实现Open GL ES，所以不同系统实现的OpenGL ES也存在着巨大的性能差异。</p>
+<h3 id="绘图框架"><a href="#绘图框架" class="headerlink" title="绘图框架"></a>绘图框架</h3><p><strong>CoreGraphics/Quartz2D</strong>: QuartZ 2D是苹果公司开发的一套API，它是Core Graphics Framework的一部分，是一套基于C的API框架，使用了Quartz作为绘图引擎。它提供了低级别、轻量级、高保真度的2D渲染。该框架可以用于基于路径的绘图、变换、颜色管理、脱屏渲染，模板、渐变、遮蔽、图像数据管理、图像的创建、遮罩以及PDF文档的创建、显示和分析。<br><strong>OpenGL ES</strong>: OpenGL ES是跨平台的图形API，属于OpenGL的一个简化版本</p>
+<p><strong>Metal</strong>: 进行图像处理的整体框架(苹果新推出的替代OpenGL)</p>
+<p><strong>注意：网上很多人说<code>UIBeizerPath</code>也是绘图框架，我觉得<code>UIBeizerPath</code>只是对<code>CoreGraphics</code>的<code>path</code>做了封装</strong></p>
+<h4 id="上下文？-什么是上下文？"><a href="#上下文？-什么是上下文？" class="headerlink" title="上下文？ 什么是上下文？"></a>上下文？ 什么是上下文？</h4><p>有许多方式获得一个图形上下文，这里我介绍两种最为常用的获取方法。</p>
+<p>第一种方法就是创建一个图片类型的上下文。调用UIGraphicsBeginImageContextWithOptions函数就可获得用来处理图片的图形上下文。利用该上下文，你就可以在其上进行绘图，并生成图片。调用UIGraphicsGetImageFromCurrentImageContext函数可从当前上下文中获取一个UIImage对象。记住在你所有的绘图操作后别忘了调用UIGraphicsEndImageContext函数关闭图形上下文。</p>
+<p>第二种方法是利用cocoa为你生成的图形上下文。当你子类化了一个UIView并实现了自己的drawRect：方法后，一旦drawRect：方法被调用，Cocoa就会为你创建一个图形上下文，此时你对图形上下文的所有绘图操作都会显示在UIView上。</p>
+<p>判断一个上下文是否为当前图形上下文需要注意的几点：<br>1.UIGraphicsBeginImageContextWithOptions函数不仅仅是创建了一个适用于图形操作的上下文，并且该上下文也属于当前上下文。<br>2.当drawRect方法被调用时，UIView的绘图上下文属于当前图形上下文。<br>3.回调方法所持有的context：参数并不会让任何上下文成为当前图形上下文。此参数仅仅是对一个图形上下文的引用罢了。    </p>
+<p>Graphics Context的几种类型</p>
+<ol>
+<li>Bitmap Graphics Context  </li>
+<li>PDF Graphics Context  </li>
+<li>Window Graphics Context  </li>
+<li>Layer Context  </li>
+<li>Post Graphics Context  </li>
+</ol>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>iOS绘图框架CoreGraphics分析:<a href="http://www.cocoachina.com/articles/20187" target="_blank" rel="noopener">http://www.cocoachina.com/articles/20187</a><br>傻傻分不清：Quartz2D、QuartzCore、CoreAnimation、CoreImage、CoreGraphics:<a href="https://www.jianshu.com/p/397690fd4555" target="_blank" rel="noopener">https://www.jianshu.com/p/397690fd4555</a><br>iOS图像处理之Core Graphics和OpenGL ES小析:<a href="https://www.jianshu.com/p/f66a7ca326dd" target="_blank" rel="noopener">https://www.jianshu.com/p/f66a7ca326dd</a><br>iOS绘图教程 各种绘制原理：<a href="https://blog.csdn.net/moxi_wang/article/details/48473033" target="_blank" rel="noopener">https://blog.csdn.net/moxi_wang/article/details/48473033</a><br>iOS 图像渲染原理：<a href="http://www.cocoachina.com/cms/wap.php?action=article&id=25510" target="_blank" rel="noopener">http://www.cocoachina.com/cms/wap.php?action=article&amp;id=25510</a><br>iOS端K线系列之绘制方法比较（CoreGraphics、CoreAnimation）:<a href="https://www.jianshu.com/p/ed681ac5c89c" target="_blank" rel="noopener">https://www.jianshu.com/p/ed681ac5c89c</a><br>iOS 图形绘制框架 ——UIBezierPath 、Core Graphics 和OpenGL：<a href="https://www.jianshu.com/p/0cfd271fc6db" target="_blank" rel="noopener">https://www.jianshu.com/p/0cfd271fc6db</a></p>
 
       
     </div>
@@ -471,8 +481,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%BA%8C%EF%BC%89/" rel="next" title="iOS面试题收录（二）">
-                <i class="fa fa-chevron-left"></i> iOS面试题收录（二）
+              <a href="/2020/05/12/Realm%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/" rel="next" title="Realm使用分析">
+                <i class="fa fa-chevron-left"></i> Realm使用分析
               </a>
             
           </div>
@@ -480,10 +490,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%89%EF%BC%89/" rel="prev" title="iOS面试题收录（三）">
-                iOS面试题收录（三） <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -613,7 +619,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#一、UI视图"><span class="nav-number">1.</span> <span class="nav-text">一、UI视图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二、OC语言"><span class="nav-number">2.</span> <span class="nav-text">二、OC语言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#三、Runtime"><span class="nav-number">3.</span> <span class="nav-text">三、Runtime</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#四、内存"><span class="nav-number">4.</span> <span class="nav-text">四、内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#五、Block"><span class="nav-number">5.</span> <span class="nav-text">五、Block</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#六、多线程"><span class="nav-number">6.</span> <span class="nav-text">六、多线程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#七、RunLoop"><span class="nav-number">7.</span> <span class="nav-text">七、RunLoop</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#八、网络"><span class="nav-number">8.</span> <span class="nav-text">八、网络</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#九、设计模式"><span class="nav-number">9.</span> <span class="nav-text">九、设计模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#十、架构-框架"><span class="nav-number">10.</span> <span class="nav-text">十、架构&#x2F;框架</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#十一、算法"><span class="nav-number">11.</span> <span class="nav-text">十一、算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#十二、第三方库"><span class="nav-number">12.</span> <span class="nav-text">十二、第三方库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#十三、跨平台-最少会其一"><span class="nav-number">13.</span> <span class="nav-text">十三、跨平台(最少会其一)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#十四、加分项（不会也没事，会就更好）"><span class="nav-number">14.</span> <span class="nav-text">十四、加分项（不会也没事，会就更好）</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#CoreAnimation"><span class="nav-number">1.</span> <span class="nav-text">CoreAnimation</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CoreGraphics-Quartz2D"><span class="nav-number">2.</span> <span class="nav-text">CoreGraphics&#x2F;Quartz2D</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OpenGL-ES"><span class="nav-number">3.</span> <span class="nav-text">OpenGL ES</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#绘图框架"><span class="nav-number">4.</span> <span class="nav-text">绘图框架</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#上下文？-什么是上下文？"><span class="nav-number">4.1.</span> <span class="nav-text">上下文？ 什么是上下文？</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#参考链接"><span class="nav-number">5.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
             
 
           </div>
