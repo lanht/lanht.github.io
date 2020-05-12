@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css" />
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Hexo, NexT" />
+
+
+
+
+  
+
+
+  <link rel="alternate" href="/atom.xml" title="立码定天下" type="application/atom+xml" />
+
+
+
+
+
+
+<meta name="description" content="主题：是什么？ 关键字const什么含义？123456const int a;int const a;const int *a;int const *a;int * const a;int const * const a;  1&gt;. 前两个的作用是一样：a 是一个常整型数2&gt;. 第三、四个意味着 a 是一个指向常整型数的指针(整型数是不可修改的，但指针可以)3&gt;. 第五个的意思：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="iOS面试题收录（一）">
+<meta property="og:url" content="http://yoursite.com/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%80%EF%BC%89/index.html">
+<meta property="og:site_name" content="立码定天下">
+<meta property="og:description" content="主题：是什么？ 关键字const什么含义？123456const int a;int const a;const int *a;int const *a;int * const a;int const * const a;  1&gt;. 前两个的作用是一样：a 是一个常整型数2&gt;. 第三、四个意味着 a 是一个指向常整型数的指针(整型数是不可修改的，但指针可以)3&gt;. 第五个的意思：">
+<meta property="article:published_time" content="2020-05-08T12:03:48.000Z">
+<meta property="article:modified_time" content="2020-05-11T01:47:05.482Z">
+<meta property="article:author" content="Lanht">
+<meta name="twitter:card" content="summary">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2020/05/08/iOS面试题收录（一）/"/>
+
+
+
+
+
+  <title>iOS面试题收录（一） | 立码定天下</title>
+  
+
+
+
+
+
+
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/"  class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">立码定天下</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br />
+            
+            关于
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-commonweal">
+          <a href="/404.html" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-heartbeat"></i> <br />
+            
+            公益404
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br />
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off"
+             placeholder="搜索..." spellcheck="false"
+             type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%80%EF%BC%89/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Lanht">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="立码定天下">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">iOS面试题收录（一）</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-05-08T20:03:48+08:00">
+                2020-05-08
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/iOS%E9%9D%A2%E8%AF%95%E6%B1%87%E6%80%BB/" itemprop="url" rel="index">
+                    <span itemprop="name">iOS面试汇总</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>主题：是什么？</p>
+<h4 id="关键字const什么含义？"><a href="#关键字const什么含义？" class="headerlink" title="关键字const什么含义？"></a>关键字const什么含义？</h4><figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> *a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> *a;</span><br><span class="line"><span class="keyword">int</span> * <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> * <span class="keyword">const</span> a;</span><br></pre></td></tr></table></figure>
+
+<p>1&gt;. 前两个的作用是一样：a 是一个常整型数<br>2&gt;. 第三、四个意味着 a 是一个指向常整型数的指针(整型数是不可修改的，但指针可以)<br>3&gt;. 第五个的意思：a 是一个指向整型数的常指针(指针指向的整型数是可以修改的，但指针是不可修改的)<br>4&gt;. 最后一个意味着：a 是一个指向常整型数的常指针(指针指向的整型数是不可修改的，同时指针也是不可修改的)</p>
+<h4 id="import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？"><a href="#import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？" class="headerlink" title="#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？"></a>#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？</h4><ol>
+<li><p>#import是Objective-C导入头文件的关键字，#include是C/C++导入头文件的关键字，使用#import头文件会自动只导入一次，不会重复导入。</p>
+</li>
+<li><p>@class告诉编译器某个类的声明，当执行时，才去查看类的实现文件，可以解决头文件的相互包含。</p>
+</li>
+<li><p>#import&lt;&gt;用来包含系统的头文件，#import””用来包含用户头文件。</p>
+</li>
+</ol>
+<h4 id="property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？"><a href="#property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？" class="headerlink" title="@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？"></a>@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？</h4><p>@property 的本质是:@property = ivar + getter + setter</p>
+<p>“属性” (property)有两大概念：ivar（实例变量）、getter+setter（存取方法）</p>
+<p>“属性” (property)作为 Objective-C 的一项特性，主要的作用就在于封装对象中的数据。 Objective-C 对象通常会把其所需要的数据保存为各种实例变量。实例变量一般通过“存取方法”(access method)来访问。其中，“获取方法” (getter)用于读取变量值，而“设置方法” (setter)用于写入变量值。</p>
+<h4 id="property中有哪些属性关键字以及作用？"><a href="#property中有哪些属性关键字以及作用？" class="headerlink" title="@property中有哪些属性关键字以及作用？"></a>@property中有哪些属性关键字以及作用？</h4><p><strong>线程安全</strong></p>
+<p><strong>nonatomic ：</strong>非原子操作。决定编译器生成的setter和getter方法是否是原子操作，一般使用nonatomic，效率高。<br><strong>atomic：</strong>多线程安全，但是性能低</p>
+<p><strong>内存管理</strong></p>
+<p><strong>strong：</strong>持有特性。setter方法将传入参数先保留，再赋值，传入参数的retaincount会+1。<br><strong>copy ：</strong>拷贝特性。setter方法将传入对象复制一份，需要完全一份新的变量时。<br><strong>assign：</strong>用于基本数据类型<br><strong>retain</strong>：相当于ARC中的strong</p>
+<p><strong>读写操作</strong></p>
+<p><strong>readwrite：</strong>可读可写特性。需要生成getter方法和setter方法<br><strong>readonly：</strong>只读特性。只会生成getter方法，不会生成setter方法，不希望属性在类外改变。</p>
+<h4 id="什么情况使用-weak-关键字，相比-assign-有什么不同？"><a href="#什么情况使用-weak-关键字，相比-assign-有什么不同？" class="headerlink" title="什么情况使用 weak 关键字，相比 assign 有什么不同？"></a>什么情况使用 weak 关键字，相比 assign 有什么不同？</h4><p>1&gt;.在 ARC 中,在有可能出现循环引用的时候,往往要通过让其中一端使用 weak 来解决,比如: delegate 代理属性。<br>2&gt;.自身已经对它进行一次强引用,没有必要再强引用一次,此时也会使用 weak,自定义 IBOutlet 控件属性一般也使用 weak（因为父控件的subViews数组已经对它有一个强引用）。</p>
+<p>不同点：<br>assign 可以用非 OC 对象，而 weak 必须用于 OC 对象。<br>weak 表明该属性定义了一种“非拥有关系”。在属性所指的对象销毁时，属性值会自动清空(nil)。</p>
+<h4 id="用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？"><a href="#用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？" class="headerlink" title="用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？"></a>用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？</h4><p>用 @property 声明 NSString、NSArray、NSDictionary 经常使用 copy 关键字，是因为他们有对应的可变类型：NSMutableString、NSMutableArray、NSMutableDictionary，他们之间可能进行赋值操作（就是把可变的赋值给不可变的），为确保对象中的字符串值不会无意间变动，应该在设置新属性值时拷贝一份。</p>
+<p>1&gt;. 因为父类指针可以指向子类对象,使用 copy 的目的是为了让本对象的属性不受外界影响,使用 copy 无论给我传入是一个可变对象还是不可对象,我本身持有的就是一个不可变的副本。<br>2&gt;. 如果我们使用是 strong ,那么这个属性就有可能指向一个可变对象,如果这个可变对象在外部被修改了,那么会影响该属性。<br>总结：使用copy的目的是，防止把可变类型的对象赋值给不可变类型的对象时，可变类型对象的值发送变化会无意间篡改不可变类型对象原来的值。</p>
+<h4 id="浅拷贝和深拷贝的区别？"><a href="#浅拷贝和深拷贝的区别？" class="headerlink" title="浅拷贝和深拷贝的区别？"></a>浅拷贝和深拷贝的区别？</h4><p><strong>浅拷贝：</strong>对一个对象地址的拷贝。源对象和副本对象是同一对象<br><strong>深拷贝：</strong>对一个对象的拷贝。源对象和副本对象是不同的两个对象</p>
+<h4 id="self-跟self-gt-什么区别？"><a href="#self-跟self-gt-什么区别？" class="headerlink" title="self.跟self-&gt;什么区别？"></a>self.跟self-&gt;什么区别？</h4><p>1&gt;. self.是调用get方法或者set放<br>2&gt;. self是当前本身，是一个指向当前对象的指针<br>3&gt;. self-&gt;是直接访问成员变量</p>
+<h4 id="一个objc对象的isa的指针指向什么？有什么作用？"><a href="#一个objc对象的isa的指针指向什么？有什么作用？" class="headerlink" title="一个objc对象的isa的指针指向什么？有什么作用？"></a>一个objc对象的isa的指针指向什么？有什么作用？</h4><p>指向他的类对象,从而可以找到对象上的方法</p>
+<h4 id="frame-和-bounds-有什么不同？"><a href="#frame-和-bounds-有什么不同？" class="headerlink" title="frame 和 bounds 有什么不同？"></a>frame 和 bounds 有什么不同？</h4><p><strong>frame：</strong>该view在父view坐标系统中的位置和大小。(参照点是父view的坐标系统)</p>
+<p><strong>bounds：</strong>该view在本身坐标系统中的位置和大小。(参照点是本身坐标系统)</p>
+<h4 id="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"><a href="#Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？" class="headerlink" title="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"></a>Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？</h4><p>OC不可以多继承，OC是单继承。有时可以用分类和协议来代替多继承<br>可以实现多个接口（协议）<br>Category是类别；一般情况用分类好，用Category去重写类的方法，仅对本Category有效，不会影响到其他类与原有类的关系。</p>
+<h4 id="Object-C有私有方法吗？私有变量呢？"><a href="#Object-C有私有方法吗？私有变量呢？" class="headerlink" title="Object-C有私有方法吗？私有变量呢？"></a>Object-C有私有方法吗？私有变量呢？</h4><p>1&gt;.OC没有类似@private的修饰词来修饰方法，只要写在.h文件中，就是公共方法<br>2&gt;. 如果你不在.h文件中声明，只在.m文件中实现，或在.m文件的Class Extension里声明，那么基本上和私有方法差不多，可以使用类扩展（Extension）来增加私有方法和私有变量<br>3&gt;. 使用private修饰的全局变量是私有变量</p>
+<h4 id="用伪代码写一个线程安全的单例模式"><a href="#用伪代码写一个线程安全的单例模式" class="headerlink" title="用伪代码写一个线程安全的单例模式"></a>用伪代码写一个线程安全的单例模式</h4><figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">static</span> XXManager * instance = <span class="literal">nil</span>;</span><br><span class="line">+ (<span class="keyword">instancetype</span>)shareInstance &#123;</span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [[<span class="keyword">self</span> alloc] init];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">id</span>)allocWithZone:(<span class="keyword">struct</span> _NSZone *)zone &#123;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [<span class="keyword">super</span> allocWithZone:zone];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line">- (<span class="keyword">id</span>)copyWithZone:(<span class="built_in">NSZone</span> *)zone &#123;</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="category-类别-和-extension-扩展-的区别"><a href="#category-类别-和-extension-扩展-的区别" class="headerlink" title="category(类别) 和 extension(扩展) 的区别"></a>category(类别) 和 extension(扩展) 的区别</h4><p>1&gt;. 类别有名字，类扩展没有分类名字，是一种特殊的分类。<br>2&gt;. 类别只能扩展方法（属性仅仅是声明，并没真正实现），类扩展可以扩展属性、成员变量和方法。<br>3&gt;. 继承可以增加，修改或者删除方法，并且可以增加属性。</p>
+<h4 id="delegate-和-notification-的区别"><a href="#delegate-和-notification-的区别" class="headerlink" title="delegate 和 notification 的区别"></a>delegate 和 notification 的区别</h4><p>二者都用于传递消息，不同之处主要在于一个是一对一的，另一个是一对多的<br><strong>notification：</strong>不需要两者之间有联系,实现一对多消息的转发<br><strong>delegate：</strong>需要两者之间必须建立联系，不然没法调用代理的方法</p>
+<h4 id="Objective-C-如何对内存管理的，说说你的看法和解决方法？"><a href="#Objective-C-如何对内存管理的，说说你的看法和解决方法？" class="headerlink" title="Objective-C 如何对内存管理的，说说你的看法和解决方法？"></a>Objective-C 如何对内存管理的，说说你的看法和解决方法？</h4><p>Objective-C的内存管理主要有三种方式ARC(自动内存计数)、手动内存计数、内存池。<br>1&gt;. 自动内存计数ARC：由Xcode自动在App编译阶段，在代码中添加内存管理代码。<br>2&gt;. 手动内存计数MRC：遵循内存谁申请、谁释放；谁添加，谁释放的原则。<br>3&gt;. 内存释放池Release Pool：把需要释放的内存统一放在一个池子中，当池子被抽干后(drain)，池子中所有的内存空间也被自动释放掉。内存池的释放操作分为自动和手动。自动释放受runloop机制影响。</p>
+<h4 id="GCD-与-NSOperation-的区别"><a href="#GCD-与-NSOperation-的区别" class="headerlink" title="GCD 与 NSOperation 的区别"></a>GCD 与 NSOperation 的区别</h4><p><strong>NSOperation:</strong>相对于GCD来说，更加强大。可以给operation之间添加依赖关系、取消一个正在执行的operation、暂停和恢复operationQueue等</p>
+<p><strong>GCD:</strong> 是一种更轻量级的，以FIFO(先进先出，后进后出)的顺序执行并发任务。使用GCD我们并不用关心任务的调度情况，而是系统会自动帮我们处理。但是GCD的短板也是非常明显的，比如我们想要给任务之间添加依赖关系、取消或者暂停一个正在执行的任务时就会变得束手无策。</p>
+<h4 id="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"><a href="#OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？" class="headerlink" title="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"></a>OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？</h4><figure class="highlight objc"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建线程的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="built_in">NSThread</span> detachNewThreadSelector:<span class="literal">nil</span> toTarget:<span class="literal">nil</span> withObject:<span class="literal">nil</span>]</span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorInBackground:<span class="literal">nil</span> withObject:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSThread</span> alloc] initWithTarget:<span class="literal">nil</span> selector:<span class="literal">nil</span> object:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_global_queue(<span class="number">0</span>, <span class="number">0</span>), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> new] addOperation:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 主线程中执行代码的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorOnMainThread:<span class="literal">nil</span> withObject:<span class="literal">nil</span> waitUntilDone:<span class="literal">YES</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_main_queue(), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> mainQueue] addOperation:<span class="literal">nil</span>];</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="runloop-和线程有什么关系"><a href="#runloop-和线程有什么关系" class="headerlink" title="runloop 和线程有什么关系?"></a>runloop 和线程有什么关系?</h4><p>runloop与线程是一一对应的，一个runloop对应一个核心的线程，为什么说是核心的，是因为runloop是可以嵌套的，但是核心的只能有一个，他们的关系保存在一个全局的字典里。 runloop是来管理线程的，当线程的runloop被开启后，线程会在执行完任务后进入休眠状态，有了任务就会被唤醒去执行任务。 runloop在第一次获取时被创建，在线程结束时被销毁。 对于主线程来说，runloop在程序一启动就默认创建好了。 对于子线程来说，runloop是懒加载的，只有当我们使用的时候才会创建，所以在子线程用定时器要注意：确保子线程的runloop被创建，不然定时器不会回调。</p>
+<h4 id="介绍下layoutSubview和drawRect"><a href="#介绍下layoutSubview和drawRect" class="headerlink" title="介绍下layoutSubview和drawRect"></a>介绍下layoutSubview和drawRect</h4><p>layoutSubviews调用情况</p>
+<ul>
+<li><p>init初始化UIView不会触发调用 </p>
+</li>
+<li><p>addSubview会触发调用 </p>
+</li>
+<li><p>改变view的width和height的时候回触发</p>
+</li>
+<li><p>调用 一个UIScrollView滚动会触发调用 </p>
+</li>
+<li><p>旋转screen会触发调用 </p>
+</li>
+<li><p>改变一个UIView大小的时候会触发</p>
+</li>
+<li><p>superView的layoutSubviews事件 直接调用setLayoutSubviews会触发调用 </p>
+</li>
+<li><p>-(void)viewWillAppear:(BOOL)animated会触发一次调用</p>
+</li>
+<li><p>-(void)viewDidAppear:(BOOL)animated 看情况</p>
+<p>可能有调用 drawRect调用情况 </p>
+</li>
+<li><p>如果UIView没有设置frame大小，直接导致drawRect不能被自动调用。 </p>
+</li>
+<li><p>drawRect在loadView和viewDidLoad这两个方法之后调用 调用sizeToFit后自动调用drawRect </p>
+</li>
+<li><p>通过设置contentMode值为UIViewContentModeRedraw。那么每次设置或者更改frame自动调用drawRect。 </p>
+</li>
+<li><p>直接调用setNeedsDisplay或者setNeedsDisplayInRect会触发调用</p>
+</li>
+</ul>
+<h4 id="UIview-和CAlayer-是什么关系-你-CLayer做过什么"><a href="#UIview-和CAlayer-是什么关系-你-CLayer做过什么" class="headerlink" title="UIview 和CAlayer 是什么关系? 你 CLayer做过什么?"></a>UIview 和CAlayer 是什么关系? 你 CLayer做过什么?</h4><p>区别： 首先UIView可以响应事件，Layer不可以.</p>
+<p>关系：</p>
+<ol>
+<li>UIView是CALayer的delegate </li>
+<li>UIView主要处理事件，CALayer负责绘制就更好 </li>
+<li>每个 UIView 内部都有一个 CALayer 在背后提供内容的绘制和显示，并且 UIView 的尺寸样式都由内部的 Layer 所提供。两者都有树状层级结构，layer 内部有 SubLayers，View 内部有 SubViews.但是 Layer 比 View 多了个AnchorPoint </li>
+</ol>
+<p>用layer做过什么：创建隐式动画 绘制边框圆角</p>
+<h4 id="iOS-UIViewController的完整生命周期"><a href="#iOS-UIViewController的完整生命周期" class="headerlink" title="iOS UIViewController的完整生命周期?"></a>iOS UIViewController的完整生命周期?</h4><p>按照执行顺序排列：</p>
+<p>1&gt;. <code>initWithCoder：</code>通过nib文件初始化时触发。<br>2&gt;. <code>awakeFromNib：</code>nib文件被加载的时候，会发生一个<code>awakeFromNib</code>的消息到nib文件中的每个对象。<br>3&gt;. <code>loadView：</code>开始加载视图控制器自带的view。<br>4&gt;. <code>viewDidLoad：</code>视图控制器的view被加载完成。<br>5&gt;. <code>viewWillAppear：</code>视图控制器的view将要显示在window上。<br>6&gt;. <code>updateViewConstraints：</code>视图控制器的view开始更新AutoLayout约束。<br>7&gt;. <code>viewWillLayoutSubviews：</code>视图控制器的view将要更新内容视图的位置。<br>8&gt;. <code>viewDidLayoutSubviews：</code>视图控制器的view已经更新视图的位置。<br>9&gt;. <code>viewDidAppear：</code>视图控制器的view已经展示到window上。<br>10&gt;. <code>viewWillDisappear：</code>视图控制器的view将要从window上消失。<br>11&gt;.<code>viewDidDisappear：</code>视图控制器的view已经从window上消失。</p>
+<h4 id="tableView的重用机制？"><a href="#tableView的重用机制？" class="headerlink" title="tableView的重用机制？"></a>tableView的重用机制？</h4><p>UITableView 通过重用单元格来达到节省内存的目的: 通过为每个单元格指定一个重用标识符，即指定了单元格的种类,当屏幕上的单元格滑出屏幕时，系统会把这个单元格添加到重用队列中，等待被重用，当有新单元格从屏幕外滑入屏幕内时，从重用队列中找看有没有可以重用的单元格，如果有，就拿过来用，如果没有就创建一个来使用</p>
+<h4 id="NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的"><a href="#NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的" class="headerlink" title="NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?"></a>NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?</h4><ol>
+<li><p>下载 NSURLConnection下载文件时，先是将整个文件下载到内存，然后再写入到沙盒，如果文件比较大，就会出现内存暴涨的情况。 而使用NSURLSessionUploadTask下载文件，会默认下载到沙盒中的tem文件中，不会出现内存暴涨的情况，但是在下载完成后会把tem中的临时文件删除，需要在初始化任务方法时，在completionHandler回调中增加保存文件的代码 </p>
+</li>
+<li><p>请求方法的控制 NSURLConnection实例化对象，实例化开始，默认请求就发送(同步发送),不需要调用start方法。而cancel可以停止请求的发送，停止后不能继续访问，需要创建新的请求。 NSURLSession有三个控制方法，取消(cancel)、暂停(suspend)、继续(resume)，暂停以后可以通过继续恢复当前的请求任务。 使用NSURLSession进行断点下载更加便捷. NSURLSession的构造方法（sessionWithConfiguration:delegate:delegateQueue）中有一个NSURLSessionConfiguration类的参数可以设置配置信息，其决定了cookie，安全和高速缓存策略，最大主机连接数，资源管理，网络超时等配置。NSURLConnection不能进行这个配置，相比较与NSURLConnection依赖与一个全局的配置对象，缺乏灵活性而言，NSURLSession有很大的改进</p>
+</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%BA%8C%EF%BC%89/" rel="prev" title="iOS面试题收录（二）">
+                iOS面试题收录（二） <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Lanht</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives/%7C%7C%20archive">
+              
+                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">2</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+
+          </nav>
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#关键字const什么含义？"><span class="nav-number">1.</span> <span class="nav-text">关键字const什么含义？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？"><span class="nav-number">2.</span> <span class="nav-text">#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？"><span class="nav-number">3.</span> <span class="nav-text">@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#property中有哪些属性关键字以及作用？"><span class="nav-number">4.</span> <span class="nav-text">@property中有哪些属性关键字以及作用？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#什么情况使用-weak-关键字，相比-assign-有什么不同？"><span class="nav-number">5.</span> <span class="nav-text">什么情况使用 weak 关键字，相比 assign 有什么不同？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？"><span class="nav-number">6.</span> <span class="nav-text">用@property声明的 NSString &#x2F; NSArray &#x2F; NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#浅拷贝和深拷贝的区别？"><span class="nav-number">7.</span> <span class="nav-text">浅拷贝和深拷贝的区别？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#self-跟self-gt-什么区别？"><span class="nav-number">8.</span> <span class="nav-text">self.跟self-&gt;什么区别？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#一个objc对象的isa的指针指向什么？有什么作用？"><span class="nav-number">9.</span> <span class="nav-text">一个objc对象的isa的指针指向什么？有什么作用？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#frame-和-bounds-有什么不同？"><span class="nav-number">10.</span> <span class="nav-text">frame 和 bounds 有什么不同？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"><span class="nav-number">11.</span> <span class="nav-text">Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Object-C有私有方法吗？私有变量呢？"><span class="nav-number">12.</span> <span class="nav-text">Object-C有私有方法吗？私有变量呢？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#用伪代码写一个线程安全的单例模式"><span class="nav-number">13.</span> <span class="nav-text">用伪代码写一个线程安全的单例模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#category-类别-和-extension-扩展-的区别"><span class="nav-number">14.</span> <span class="nav-text">category(类别) 和 extension(扩展) 的区别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#delegate-和-notification-的区别"><span class="nav-number">15.</span> <span class="nav-text">delegate 和 notification 的区别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Objective-C-如何对内存管理的，说说你的看法和解决方法？"><span class="nav-number">16.</span> <span class="nav-text">Objective-C 如何对内存管理的，说说你的看法和解决方法？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#GCD-与-NSOperation-的区别"><span class="nav-number">17.</span> <span class="nav-text">GCD 与 NSOperation 的区别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"><span class="nav-number">18.</span> <span class="nav-text">OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#runloop-和线程有什么关系"><span class="nav-number">19.</span> <span class="nav-text">runloop 和线程有什么关系?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#介绍下layoutSubview和drawRect"><span class="nav-number">20.</span> <span class="nav-text">介绍下layoutSubview和drawRect</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#UIview-和CAlayer-是什么关系-你-CLayer做过什么"><span class="nav-number">21.</span> <span class="nav-text">UIview 和CAlayer 是什么关系? 你 CLayer做过什么?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#iOS-UIViewController的完整生命周期"><span class="nav-number">22.</span> <span class="nav-text">iOS UIViewController的完整生命周期?</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#tableView的重用机制？"><span class="nav-number">23.</span> <span class="nav-text">tableView的重用机制？</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的"><span class="nav-number">24.</span> <span class="nav-text">NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Lanht</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a> v5.1.4</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
