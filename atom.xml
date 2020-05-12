@@ -116,7 +116,7 @@
     <link href="http://yoursite.com/2020/05/12/load%E5%92%8Cinitialize%E6%96%B9%E6%B3%95%E7%9A%84%E5%8C%BA%E5%88%AB/"/>
     <id>http://yoursite.com/2020/05/12/load%E5%92%8Cinitialize%E6%96%B9%E6%B3%95%E7%9A%84%E5%8C%BA%E5%88%AB/</id>
     <published>2020-05-12T01:59:04.000Z</published>
-    <updated>2020-05-12T02:36:03.265Z</updated>
+    <updated>2020-05-12T06:02:19.638Z</updated>
     
     <content type="html"><![CDATA[<h4 id="调用方式"><a href="#调用方式" class="headerlink" title="调用方式"></a>调用方式</h4><p>1、load是根据函数地址直接调用</p><p>2、initialize是通过objc_msgSeng调用</p><h4 id="调用时刻"><a href="#调用时刻" class="headerlink" title="调用时刻"></a>调用时刻</h4><p>1、load是runtime加载类、分类的时候调用(只会调用一次)</p><p>2、initialize是类第一次接收到消息的时候调用, 每一个类只会initialize一次(如果子类没有实现initialize方法, 会调用父类的initialize方法, 所以父类的initialize方法可能会调用多次)</p><h4 id="load和initializee的调用顺序"><a href="#load和initializee的调用顺序" class="headerlink" title="load和initializee的调用顺序"></a>load和initializee的调用顺序</h4><p><strong>load</strong></p><p>1、先调用类的load</p><ul><li><p>先编译的类, 优先调用load（先编译，先调用）</p></li><li><p>调用子类的load之前, 会先调用父类的load</p></li></ul><p>2、再调用分类的load</p><ul><li>先编译的分类, 优先调用load（先编译，先调用）</li></ul><p><strong>initialize</strong></p><p>先调用父类的+initialize，再调用子类的+initialize。（先初始化父类，再初始化子类，每个类只会初始化1次）<br>如果分类实现了+initialize，会覆盖原有类的+initialize</p><h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ol><li><p>+initialize和+load的最大区别是</p><ul><li><p>initialize是通过objc_msgSeng调用，load是根据函数地址直接调用；</p></li><li><p>如果子类没有实现initialize方法, 会调用父类的initialize方法, 所以父类的initialize方法可能会调用多次</p></li><li><p>如果分类实现了+initialize，会覆盖原有类的+initialize</p></li></ul></li></ol>]]></content>
     
@@ -132,7 +132,7 @@
     </summary>
     
     
-      <category term="-iOS" scheme="http://yoursite.com/categories/iOS/"/>
+      <category term="iOS" scheme="http://yoursite.com/categories/iOS/"/>
     
     
   </entry>
