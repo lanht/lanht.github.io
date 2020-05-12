@@ -3,7 +3,7 @@ title: load和initialize方法的区别
 date: 2020-05-12 09:59:04
 tags:
 categories:
-	-iOS
+	- iOS
 ---
 
 #### 调用方式
