@@ -1,6 +1,183 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>AFNetworking使用分析</title>
+    <url>/2020/05/12/AFNetworking%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/</url>
+    <content><![CDATA[<p>基于3.x进行使用分析</p>
+<h4 id="前景回顾"><a href="#前景回顾" class="headerlink" title="前景回顾"></a>前景回顾</h4><p>NSURLConnection（在iOS8.0后弃用）</p>
+<p>NSURLSession</p>
+<p>AF2.x是对NSURLConnection的封装</p>
+<p>AF3.x是对NSURLSession的封装</p>
+<p><strong>AF2.x为什么需要常驻线程？</strong></p>
+<p>先来看看 NSURLConnection 发送请求时的线程情况，NSURLConnection 是被设计成异步发送的，调用了start方法后，NSURLConnection 会新建一些线程用底层的 CFSocket 去发送和接收请求，在发送和接收的一些事件发生后通知原来线程的Runloop去回调事件。</p>
+<p><strong>AF3.x为什么不需要常驻线程？</strong></p>
+<p>NSURLSession发起的请求，不再需要在当前线程进行代理方法的回调！可以指定回调的delegateQueue，这样我们就不用为了等待代理回调方法而苦苦保活线程了。</p>
+<p><strong>为什么AF3.0中需要设置</strong></p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="keyword">self</span>.operationQueue.maxConcurrentOperationCount = <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<p>而AF2.0却不需要？</p>
+<p>解答：功能不一样：AF3.0的operationQueue是用来接收NSURLSessionDelegate回调的，鉴于一些多线程数据访问的安全性考虑，设置了maxConcurrentOperationCount = 1来达到串行回调的效果。<br>而AF2.0的operationQueue是用来添加operation并进行并发请求的，所以不要设置为1。</p>
+<h4 id="AF分为如下5个功能模块："><a href="#AF分为如下5个功能模块：" class="headerlink" title="AF分为如下5个功能模块："></a>AF分为如下5个功能模块：</h4><ul>
+<li><p>网络通信模块(AFURLSessionManager、AFHTTPSessionManger)</p>
+</li>
+<li><p>网络状态监听模块(Reachability)</p>
+</li>
+<li><p>网络通信安全策略模块(Security)</p>
+</li>
+<li><p>网络通信信息序列化/反序列化模块(Serialization)</p>
+</li>
+<li><p>对于iOS UIKit库的扩展(UIKit)</p>
+</li>
+</ul>
+<h5 id="网络通信模块"><a href="#网络通信模块" class="headerlink" title="网络通信模块"></a>网络通信模块</h5><p>其核心当然是网络通信模块AFURLSessionManager。大家都知道，AF3.x是基于NSURLSession来封装的。所以这个类围绕着NSURLSession做了一系列的封装。而其余的四个模块，均是为了配合网络通信或对已有UIKit的一个扩展工具包。</p>
+<p>其中AFHTTPSessionManager是继承于AFURLSessionManager的，我们一般做网络请求都是用这个类，<strong>但是它本身是没有做实事的，只是做了一些简单的封装，把请求逻辑分发给父类AFURLSessionManager或者其它类去做。</strong></p>
+<p>AFURLSessionManager初始化</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="keyword">instancetype</span>)initWithSessionConfiguration:(<span class="built_in">NSURLSessionConfiguration</span> *)configuration &#123;</span><br><span class="line">    <span class="keyword">self</span> = [<span class="keyword">super</span> init];</span><br><span class="line">    <span class="keyword">if</span> (!<span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!configuration) &#123;</span><br><span class="line">        configuration = [<span class="built_in">NSURLSessionConfiguration</span> defaultSessionConfiguration];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">self</span>.sessionConfiguration = configuration;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">self</span>.operationQueue = [[<span class="built_in">NSOperationQueue</span> alloc] init];</span><br><span class="line">    <span class="keyword">self</span>.operationQueue.maxConcurrentOperationCount = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">self</span>.session = [<span class="built_in">NSURLSession</span> sessionWithConfiguration:<span class="keyword">self</span>.sessionConfiguration delegate:<span class="keyword">self</span> delegateQueue:<span class="keyword">self</span>.operationQueue];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">self</span>.responseSerializer = [AFJSONResponseSerializer serializer];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">self</span>.securityPolicy = [AFSecurityPolicy defaultPolicy];</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> !TARGET_OS_WATCH</span></span><br><span class="line">    <span class="keyword">self</span>.reachabilityManager = [AFNetworkReachabilityManager sharedManager];</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">self</span>.mutableTaskDelegatesKeyedByTaskIdentifier = [[<span class="built_in">NSMutableDictionary</span> alloc] init];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">self</span>.lock = [[<span class="built_in">NSLock</span> alloc] init];</span><br><span class="line">    <span class="keyword">self</span>.lock.name = AFURLSessionManagerLockName;</span><br><span class="line"></span><br><span class="line">    [<span class="keyword">self</span>.session getTasksWithCompletionHandler:^(<span class="built_in">NSArray</span> *dataTasks, <span class="built_in">NSArray</span> *uploadTasks, <span class="built_in">NSArray</span> *downloadTasks) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="built_in">NSURLSessionDataTask</span> *task <span class="keyword">in</span> dataTasks) &#123;</span><br><span class="line">            [<span class="keyword">self</span> addDelegateForDataTask:task uploadProgress:<span class="literal">nil</span> downloadProgress:<span class="literal">nil</span> completionHandler:<span class="literal">nil</span>];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="built_in">NSURLSessionUploadTask</span> *uploadTask <span class="keyword">in</span> uploadTasks) &#123;</span><br><span class="line">            [<span class="keyword">self</span> addDelegateForUploadTask:uploadTask progress:<span class="literal">nil</span> completionHandler:<span class="literal">nil</span>];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="built_in">NSURLSessionDownloadTask</span> *downloadTask <span class="keyword">in</span> downloadTasks) &#123;</span><br><span class="line">            [<span class="keyword">self</span> addDelegateForDownloadTask:downloadTask progress:<span class="literal">nil</span> destination:<span class="literal">nil</span> completionHandler:<span class="literal">nil</span>];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">self</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在初始化方法中，需要完成初始化一些自己持有的实例：</p>
+<ol>
+<li>初始化<strong>会话配置</strong>（NSURLSessionConfiguration），默认为 <code>defaultSessionConfiguration</code></li>
+<li>初始化会话（session），并设置会话的代理以及代理队列</li>
+<li>初始化管理<strong>响应序列化</strong>（AFJSONResponseSerializer），<strong>安全认证</strong>（AFSecurityPolicy）以及<strong>监控网络状态</strong>（AFNetworkReachabilityManager）的实例</li>
+<li>初始化保存 data task 的字典（mutableTaskDelegatesKeyedByTaskIdentifier）</li>
+</ol>
+<p>在获得了 <code>AFURLSessionManager</code> 的实例之后，我们可以通过以下方法创建 <code>NSURLSessionDataTask</code> 的实例：</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="built_in">NSURLSessionDataTask</span> *)dataTaskWithRequest:(<span class="built_in">NSURLRequest</span> *)request</span><br><span class="line">                               uploadProgress:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *uploadProgress)) uploadProgressBlock</span><br><span class="line">                             downloadProgress:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *downloadProgress)) downloadProgressBlock</span><br><span class="line">                            completionHandler:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSURLResponse</span> *response, <span class="keyword">id</span> _Nullable responseObject,  <span class="built_in">NSError</span> * _Nullable error))completionHandler;</span><br><span class="line"></span><br><span class="line">- (<span class="built_in">NSURLSessionUploadTask</span> *)uploadTaskWithRequest:(<span class="built_in">NSURLRequest</span> *)request</span><br><span class="line">                                         fromFile:(<span class="built_in">NSURL</span> *)fileURL</span><br><span class="line">                                         progress:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *uploadProgress)) uploadProgressBlock</span><br><span class="line">                                completionHandler:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSURLResponse</span> *response, <span class="keyword">id</span> _Nullable responseObject, <span class="built_in">NSError</span>  * _Nullable error))completionHandler;</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">- (<span class="built_in">NSURLSessionDownloadTask</span> *)downloadTaskWithRequest:(<span class="built_in">NSURLRequest</span> *)request</span><br><span class="line">                                             progress:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *downloadProgress)) downloadProgressBlock</span><br><span class="line">                                          destination:(<span class="keyword">nullable</span> <span class="built_in">NSURL</span> * (^)(<span class="built_in">NSURL</span> *targetPath, <span class="built_in">NSURLResponse</span> *response))destination</span><br><span class="line">                                    completionHandler:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSURLResponse</span> *response, <span class="built_in">NSURL</span> * _Nullable filePath, <span class="built_in">NSError</span> * _Nullable error))completionHandler;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>我们将以 <code>- [AFURLSessionManager dataTaskWithRequest:uploadProgress:downloadProgress:completionHandler:]</code> 方法的实现为例，分析它是如何实例化并返回一个 <code>NSURLSessionTask</code> 的实例的：</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="built_in">NSURLSessionDataTask</span> *)dataTaskWithRequest:(<span class="built_in">NSURLRequest</span> *)request</span><br><span class="line">                               uploadProgress:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *uploadProgress)) uploadProgressBlock</span><br><span class="line">                             downloadProgress:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *downloadProgress)) downloadProgressBlock</span><br><span class="line">                            completionHandler:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSURLResponse</span> *response, <span class="keyword">id</span> _Nullable responseObject,  <span class="built_in">NSError</span> * _Nullable error))completionHandler &#123;</span><br><span class="line"></span><br><span class="line">    __block <span class="built_in">NSURLSessionDataTask</span> *dataTask = <span class="literal">nil</span>;</span><br><span class="line">    url_session_manager_create_task_safely(^&#123;</span><br><span class="line">        dataTask = [<span class="keyword">self</span>.session dataTaskWithRequest:request];</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    [<span class="keyword">self</span> addDelegateForDataTask:dataTask uploadProgress:uploadProgressBlock downloadProgress:downloadProgressBlock completionHandler:completionHandler];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> dataTask;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>url_session_manager_create_task_safely</code> 的调用是因为苹果框架中的一个 bug <a href="https://github.com/AFNetworking/AFNetworking/issues/2093" target="_blank" rel="noopener">#2093</a>，如果有兴趣可以看一下，在这里就不说明了</p>
+</blockquote>
+<ol>
+<li>调用 <code>- [NSURLSession dataTaskWithRequest:]</code> 方法传入 <code>NSURLRequest</code></li>
+<li>调用 <code>- [AFURLSessionManager addDelegateForDataTask:uploadProgress:downloadProgress:completionHandler:]</code> 方法返回一个 <code>AFURLSessionManagerTaskDelegate</code> 对象</li>
+<li>将 <code>completionHandler</code> <code>uploadProgressBlock</code> 和 <code>downloadProgressBlock</code> 传入该对象并在相应事件发生时进行回调</li>
+</ol>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"> (<span class="keyword">void</span>)addDelegateForDataTask:(<span class="built_in">NSURLSessionDataTask</span> *)dataTask</span><br><span class="line">                uploadProgress:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *uploadProgress)) uploadProgressBlock</span><br><span class="line">              downloadProgress:(<span class="keyword">nullable</span> <span class="keyword">void</span> (^)(<span class="built_in">NSProgress</span> *downloadProgress)) downloadProgressBlock</span><br><span class="line">             completionHandler:(<span class="keyword">void</span> (^)(<span class="built_in">NSURLResponse</span> *response, <span class="keyword">id</span> responseObject, <span class="built_in">NSError</span> *error))completionHandler</span><br><span class="line">&#123;</span><br><span class="line">    AFURLSessionManagerTaskDelegate *delegate = [[AFURLSessionManagerTaskDelegate alloc] init];</span><br><span class="line">    delegate.manager = <span class="keyword">self</span>;</span><br><span class="line">    delegate.completionHandler = completionHandler;</span><br><span class="line"></span><br><span class="line">    dataTask.taskDescription = <span class="keyword">self</span>.taskDescriptionForSessionTasks;</span><br><span class="line">    [<span class="keyword">self</span> setDelegate:delegate forTask:dataTask];</span><br><span class="line"></span><br><span class="line">    delegate.uploadProgressBlock = uploadProgressBlock;</span><br><span class="line">    delegate.downloadProgressBlock = downloadProgressBlock;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在这个方法中同时调用了另一个方法 <code>- [AFURLSessionManager setDelegate:forTask:]</code> 来设置代理：</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)setDelegate:(AFURLSessionManagerTaskDelegate *)delegate</span><br><span class="line">            forTask:(<span class="built_in">NSURLSessionTask</span> *)task</span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">	#<span class="number">1</span>: 检查参数, 略</span><br><span class="line"></span><br><span class="line">    [<span class="keyword">self</span>.lock lock];</span><br><span class="line">    <span class="keyword">self</span>.mutableTaskDelegatesKeyedByTaskIdentifier[@(task.taskIdentifier)] = delegate;</span><br><span class="line">    [<span class="keyword">self</span> addNotificationObserverForTask:task];</span><br><span class="line">    [<span class="keyword">self</span>.lock unlock];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="网络状态监听模块"><a href="#网络状态监听模块" class="headerlink" title="网络状态监听模块"></a>网络状态监听模块</h5><p><code>AFNetworkReachabilityManager</code> 是对 <code>SystemConfiguration</code> 模块的封装，苹果的文档中也有一个类似的项目 <a href="https://developer.apple.com/library/ios/samplecode/reachability/" target="_blank" rel="noopener">Reachability</a> 这里对网络状态的监控跟苹果官方的实现几乎是完全相同的。</p>
+<p><strong>AFNetworkReachabilityManager 的使用和实现</strong></p>
+<p><code>AFNetworkReachabilityManager</code> 的使用还是非常简单的，只需要三个步骤，就基本可以完成对网络状态的监控。</p>
+<ol>
+<li><a href="">初始化 <code>AFNetworkReachabilityManager</code></a></li>
+<li><a href="">调用 <code>startMonitoring</code> 方法开始对网络状态进行监控</a></li>
+<li><a href="">设置 <code>networkReachabilityStatusBlock</code> 在每次网络状态改变时, 调用这个 block</a></li>
+</ol>
+<h5 id="网络通信安全策略模块"><a href="#网络通信安全策略模块" class="headerlink" title="网络通信安全策略模块"></a>网络通信安全策略模块</h5><p>用于HTTPS中的SSL校验规则设置，验证证书是否正确。</p>
+<p>自 iOS9 发布之后，由于新特性 <a href="https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CocoaKeys.html" target="_blank" rel="noopener">App Transport Security</a> 的引入，在默认行为下是不能发送 HTTP 请求的。很多网站都在转用 HTTPS，而 <code>AFNetworking</code> 中的 <code>AFSecurityPolicy</code> 就是为了阻止中间人攻击，以及其它漏洞的工具。</p>
+<p><code>AFSecurityPolicy</code> 主要作用就是验证 HTTPS 请求的证书是否有效，如果 app 中有一些敏感信息或者涉及交易信息，一定要使用 HTTPS 来保证交易或者用户信息的安全。</p>
+<ul>
+<li><p>AFSSLPinningMode</p>
+<p>使用 <code>AFSecurityPolicy</code> 时，总共有三种验证服务器是否被信任的方式：</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="built_in">NS_ENUM</span>(<span class="built_in">NSUInteger</span>, AFSSLPinningMode) &#123;</span><br><span class="line">    AFSSLPinningModeNone,</span><br><span class="line">    AFSSLPinningModePublicKey,</span><br><span class="line">    AFSSLPinningModeCertificate,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>AFSSLPinningModeNone</code> 是默认的认证方式，只会在系统的信任的证书列表中对服务端返回的证书进行验证</li>
+<li><code>AFSSLPinningModeCertificate</code> 需要客户端预先保存服务端的证书</li>
+<li><code>AFSSLPinningModePublicKey</code> 也需要预先保存服务端发送的证书，但是这里只会验证证书中的公钥是否正确</li>
+</ul>
+</li>
+<li><p>初始化以及设置</p>
+<p>在使用 <code>AFSecurityPolicy</code> 验证服务端是否受到信任之前，要对其进行初始化，使用初始化方法时，主要目的是设置<strong>验证服务器是否受信任的方式</strong>。</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">+ (<span class="keyword">instancetype</span>)policyWithPinningMode:(AFSSLPinningMode)pinningMode &#123;</span><br><span class="line">    <span class="keyword">return</span> [<span class="keyword">self</span> policyWithPinningMode:pinningMode withPinnedCertificates:[<span class="keyword">self</span> defaultPinnedCertificates]];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">instancetype</span>)policyWithPinningMode:(AFSSLPinningMode)pinningMode withPinnedCertificates:(<span class="built_in">NSSet</span> *)pinnedCertificates &#123;</span><br><span class="line">    AFSecurityPolicy *securityPolicy = [[<span class="keyword">self</span> alloc] init];</span><br><span class="line">    securityPolicy.SSLPinningMode = pinningMode;</span><br><span class="line"></span><br><span class="line">    [securityPolicy setPinnedCertificates:pinnedCertificates];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> securityPolicy;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里没有什么地方值得解释的。不过在调用 <code>pinnedCertificate</code> 的 setter 方法时，会从全部的证书中<strong>取出公钥</strong>保存到 <code>pinnedPublicKeys</code> 属性中。</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)setPinnedCertificates:(<span class="built_in">NSSet</span> *)pinnedCertificates &#123;</span><br><span class="line">    _pinnedCertificates = pinnedCertificates;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">self</span>.pinnedCertificates) &#123;</span><br><span class="line">        <span class="built_in">NSMutableSet</span> *mutablePinnedPublicKeys = [<span class="built_in">NSMutableSet</span> setWithCapacity:[<span class="keyword">self</span>.pinnedCertificates count]];</span><br><span class="line">        <span class="keyword">for</span> (<span class="built_in">NSData</span> *certificate <span class="keyword">in</span> <span class="keyword">self</span>.pinnedCertificates) &#123;</span><br><span class="line">            <span class="keyword">id</span> publicKey = AFPublicKeyForCertificate(certificate);</span><br><span class="line">            <span class="keyword">if</span> (!publicKey) &#123;</span><br><span class="line">                <span class="keyword">continue</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            [mutablePinnedPublicKeys addObject:publicKey];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">self</span>.pinnedPublicKeys = [<span class="built_in">NSSet</span> setWithSet:mutablePinnedPublicKeys];</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">self</span>.pinnedPublicKeys = <span class="literal">nil</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在这里调用了 <code>AFPublicKeyForCertificate</code> 对证书进行操作，返回一个公钥。</p>
+</li>
+<li><p>操作 SecTrustRef</p>
+<p>对 <code>serverTrust</code> 的操作的函数基本上都是 C 的 API，都定义在 <code>Security</code> 模块中，先来分析一下在上一节中 <code>AFPublicKeyForCertificate</code> 的实现</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">id</span> AFPublicKeyForCertificate(<span class="built_in">NSData</span> *certificate) &#123;</span><br><span class="line">  	<span class="comment">//1.初始化一坨临时变量</span></span><br><span class="line">    <span class="keyword">id</span> allowedPublicKey = <span class="literal">nil</span>;</span><br><span class="line">    SecCertificateRef allowedCertificate;</span><br><span class="line">    SecCertificateRef allowedCertificates[<span class="number">1</span>];</span><br><span class="line">    <span class="built_in">CFArrayRef</span> tempCertificates = <span class="literal">nil</span>;</span><br><span class="line">    SecPolicyRef policy = <span class="literal">nil</span>;</span><br><span class="line">    SecTrustRef allowedTrust = <span class="literal">nil</span>;</span><br><span class="line">    SecTrustResultType result;</span><br><span class="line">		</span><br><span class="line">  	<span class="comment">//2.使用 SecCertificateCreateWithData 通过 DER 表示的数据生成一个 SecCertificateRef，然后判断返回值是否为 NULL</span></span><br><span class="line">  	<span class="comment">//这里使用了一个非常神奇的宏 __Require_Quiet，它会判断 allowedCertificate != NULL 是否成立，如果 allowedCertificate 为空就会跳到 _out 标签处继续执行</span></span><br><span class="line">    allowedCertificate = SecCertificateCreateWithData(<span class="literal">NULL</span>, (__bridge <span class="built_in">CFDataRef</span>)certificate);</span><br><span class="line">    __Require_Quiet(allowedCertificate != <span class="literal">NULL</span>, _<span class="keyword">out</span>);</span><br><span class="line">		</span><br><span class="line">  	<span class="comment">//3.通过上面的 allowedCertificate 创建一个 CFArray</span></span><br><span class="line">    allowedCertificates[<span class="number">0</span>] = allowedCertificate;</span><br><span class="line">    tempCertificates = <span class="built_in">CFArrayCreate</span>(<span class="literal">NULL</span>, (<span class="keyword">const</span> <span class="keyword">void</span> **)allowedCertificates, <span class="number">1</span>, <span class="literal">NULL</span>);</span><br><span class="line">		</span><br><span class="line">  	<span class="comment">//4.创建一个默认的符合 X509 标准的 SecPolicyRef，通过默认的 SecPolicyRef 和证书创建一个 SecTrustRef 用于信任评估，对该对象进行信任评估，确认生成的 SecTrustRef 是值得信任的。</span></span><br><span class="line">    policy = SecPolicyCreateBasicX509();</span><br><span class="line">    __Require_noErr_Quiet(SecTrustCreateWithCertificates(tempCertificates, policy, &amp;allowedTrust), _<span class="keyword">out</span>);</span><br><span class="line">  </span><br><span class="line">  	<span class="comment">//这里使用的 __Require_noErr_Quiet 和上面的宏差不多，只是会根据返回值判断是否存在错误</span></span><br><span class="line">    __Require_noErr_Quiet(SecTrustEvaluate(allowedTrust, &amp;result), _<span class="keyword">out</span>);</span><br><span class="line">	</span><br><span class="line">  	<span class="comment">//5.获取公钥</span></span><br><span class="line">    allowedPublicKey = (__bridge_transfer <span class="keyword">id</span>)SecTrustCopyPublicKey(allowedTrust);</span><br><span class="line"></span><br><span class="line">_<span class="keyword">out</span>:</span><br><span class="line">    <span class="keyword">if</span> (allowedTrust) &#123;</span><br><span class="line">        <span class="built_in">CFRelease</span>(allowedTrust);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (policy) &#123;</span><br><span class="line">        <span class="built_in">CFRelease</span>(policy);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tempCertificates) &#123;</span><br><span class="line">        <span class="built_in">CFRelease</span>(tempCertificates);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (allowedCertificate) &#123;</span><br><span class="line">        <span class="built_in">CFRelease</span>(allowedCertificate);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> allowedPublicKey;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>对它的操作还有 <code>AFCertificateTrustChainForServerTrust</code> 和 <code>AFPublicKeyTrustChainForServerTrust</code> 但是它们几乎调用了相同的 API。</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="built_in">NSArray</span> * AFCertificateTrustChainForServerTrust(SecTrustRef serverTrust) &#123;</span><br><span class="line">    <span class="built_in">CFIndex</span> certificateCount = SecTrustGetCertificateCount(serverTrust);</span><br><span class="line">    <span class="built_in">NSMutableArray</span> *trustChain = [<span class="built_in">NSMutableArray</span> arrayWithCapacity:(<span class="built_in">NSUInteger</span>)certificateCount];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="built_in">CFIndex</span> i = <span class="number">0</span>; i &lt; certificateCount; i++) &#123;</span><br><span class="line">        SecCertificateRef certificate = SecTrustGetCertificateAtIndex(serverTrust, i);</span><br><span class="line">        [trustChain addObject:(__bridge_transfer <span class="built_in">NSData</span> *)SecCertificateCopyData(certificate)];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> [<span class="built_in">NSArray</span> arrayWithArray:trustChain];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ul>
+<ul>
+<li><p>验证服务端是否受信</p>
+<p>验证服务端是否守信是通过 <code>- [AFSecurityPolicy evaluateServerTrust:forDomain:]</code> 方法进行的。</p>
+<figure class="highlight objectivec"><table><tr><td class="code"><pre><span class="line">- (<span class="built_in">BOOL</span>)evaluateServerTrust:(SecTrustRef)serverTrust</span><br><span class="line">                  forDomain:(<span class="built_in">NSString</span> *)domain</span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">	#<span class="number">1</span>: 不能隐式地信任自己签发的证书</span><br><span class="line"></span><br><span class="line">	#<span class="number">2</span>: 设置 policy</span><br><span class="line"></span><br><span class="line">	#<span class="number">3</span>: 验证证书是否有效</span><br><span class="line"></span><br><span class="line">	#<span class="number">4</span>: 根据 SSLPinningMode 对服务端进行验证</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li><p>不能隐式地信任自己签发的证书</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">if (domain &amp;&amp; self.allowInvalidCertificates &amp;&amp; self.validatesDomainName &amp;&amp; (self.SSLPinningMode &#x3D;&#x3D; AFSSLPinningModeNone || [self.pinnedCertificates count] &#x3D;&#x3D; 0)) &#123;</span><br><span class="line">    NSLog(@&quot;In order to validate a domain name for self signed certificates, you MUST use pinning.&quot;);</span><br><span class="line">    return NO;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>所以如果没有提供证书或者不验证证书，并且还设置 <code>allowInvalidCertificates</code> 为<strong>真</strong>，满足上面的所有条件，说明这次的验证是不安全的，会直接返回 <code>NO</code></p>
+</li>
+<li><p>设置 policy</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">NSMutableArray *policies &#x3D; [NSMutableArray array];</span><br><span class="line"> if (self.validatesDomainName) &#123;</span><br><span class="line">     [policies addObject:(__bridge_transfer id)SecPolicyCreateSSL(true, (__bridge CFStringRef)domain)];</span><br><span class="line"> &#125; else &#123;</span><br><span class="line">     [policies addObject:(__bridge_transfer id)SecPolicyCreateBasicX509()];</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>如果要验证域名的话，就以域名为参数创建一个 <code>SecPolicyRef</code>，否则会创建一个符合 X509 标准的默认 <code>SecPolicyRef</code> 对象</p>
+</li>
+<li><p>验证证书的有效性</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">if (self.SSLPinningMode &#x3D;&#x3D; AFSSLPinningModeNone) &#123;</span><br><span class="line">     return self.allowInvalidCertificates || AFServerTrustIsValid(serverTrust);</span><br><span class="line"> &#125; else if (!AFServerTrustIsValid(serverTrust) &amp;&amp; !self.allowInvalidCertificates) &#123;</span><br><span class="line">     return NO;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>如果<strong>只根据信任列表中的证书</strong>进行验证，即 <code>self.SSLPinningMode == AFSSLPinningModeNone</code>。如果允许无效的证书的就会直接返回 <code>YES</code>。不允许就会对服务端信任进行验证。</li>
+<li>如果服务器信任无效，并且不允许无效证书，就会返回 <code>NO</code></li>
+</ul>
+</li>
+<li><p>根据 <code>SSLPinningMode</code> 对服务器信任进行验证</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">switch (self.SSLPinningMode) &#123;</span><br><span class="line">     case AFSSLPinningModeNone:</span><br><span class="line">     default:</span><br><span class="line">         return NO;</span><br><span class="line">     case AFSSLPinningModeCertificate: &#123;</span><br><span class="line">         ...</span><br><span class="line">     &#125;</span><br><span class="line">     case AFSSLPinningModePublicKey: &#123;</span><br><span class="line">         ...</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>AFSSLPinningModeNone</code> 直接返回 <code>NO</code></li>
+<li><code>AFSSLPinningModeCertificate</code></li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">NSMutableArray *pinnedCertificates &#x3D; [NSMutableArray array];</span><br><span class="line">  for (NSData *certificateData in self.pinnedCertificates) &#123;</span><br><span class="line">      [pinnedCertificates addObject:(__bridge_transfer id)SecCertificateCreateWithData(NULL, (__bridge CFDataRef)certificateData)];</span><br><span class="line">  &#125;</span><br><span class="line">  SecTrustSetAnchorCertificates(serverTrust, (__bridge CFArrayRef)pinnedCertificates);</span><br><span class="line"></span><br><span class="line">  if (!AFServerTrustIsValid(serverTrust)) &#123;</span><br><span class="line">      return NO;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  &#x2F;&#x2F; obtain the chain after being validated, which *should* contain the pinned certificate in the last position (if it&#39;s the Root CA)</span><br><span class="line">  NSArray *serverCertificates &#x3D; AFCertificateTrustChainForServerTrust(serverTrust);</span><br><span class="line"></span><br><span class="line">  for (NSData *trustChainCertificate in [serverCertificates reverseObjectEnumerator]) &#123;</span><br><span class="line">      if ([self.pinnedCertificates containsObject:trustChainCertificate]) &#123;</span><br><span class="line">          return YES;</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  return NO;</span><br></pre></td></tr></table></figure>
+
+<ol>
+<li>从 <code>self.pinnedCertificates</code> 中获取 DER 表示的数据</li>
+<li>使用 <code>SecTrustSetAnchorCertificates</code> 为服务器信任设置证书</li>
+<li>判断服务器信任的有效性</li>
+<li>使用 <code>AFCertificateTrustChainForServerTrust</code> 获取服务器信任中的全部 DER 表示的证书</li>
+<li>如果 <code>pinnedCertificates</code> 中有相同的证书，就会返回 <code>YES</code></li>
+</ol>
+<ul>
+<li>AFSSLPinningModePublicKey</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">NSUInteger trustedPublicKeyCount &#x3D; 0;</span><br><span class="line"> NSArray *publicKeys &#x3D; AFPublicKeyTrustChainForServerTrust(serverTrust);</span><br><span class="line">     </span><br><span class="line"> for (id trustChainPublicKey in publicKeys) &#123;</span><br><span class="line">     for (id pinnedPublicKey in self.pinnedPublicKeys) &#123;</span><br><span class="line">         if (AFSecKeyIsEqualToKey((__bridge SecKeyRef)trustChainPublicKey, (__bridge SecKeyRef)pinnedPublicKey)) &#123;</span><br><span class="line">             trustedPublicKeyCount +&#x3D; 1;</span><br><span class="line">         &#125;</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br><span class="line"> return trustedPublicKeyCount &gt; 0;</span><br></pre></td></tr></table></figure>
+
+<p>这部分的实现和上面的差不多，区别有两点</p>
+<ol>
+<li>会从服务器信任中获取公钥</li>
+<li><code>pinnedPublicKeys</code> 中的公钥与服务器信任中的公钥相同的数量大于 0，就会返回真</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>与 AFURLSessionManager 协作</p>
+<p>在代理协议 <code>- URLSession:didReceiveChallenge:completionHandler:</code> 或者 <code>- URLSession:task:didReceiveChallenge:completionHandler:</code> 代理方法被调用时会运行这段代码</p>
+<figure class="highlight objectivec"><table><tr><td class="code"><pre><span class="line"><span class="keyword">if</span> ([challenge.protectionSpace.authenticationMethod isEqualToString:<span class="built_in">NSURLAuthenticationMethodServerTrust</span>]) &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.securityPolicy evaluateServerTrust:challenge.protectionSpace.serverTrust forDomain:challenge.protectionSpace.host]) &#123;</span><br><span class="line">        disposition = <span class="built_in">NSURLSessionAuthChallengeUseCredential</span>;</span><br><span class="line">        credential = [<span class="built_in">NSURLCredential</span> credentialForTrust:challenge.protectionSpace.serverTrust];</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        disposition = <span class="built_in">NSURLSessionAuthChallengeRejectProtectionSpace</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    disposition = <span class="built_in">NSURLSessionAuthChallengePerformDefaultHandling</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><code>NSURLAuthenticationChallenge</code> 表示一个认证的挑战，提供了关于这次认证的全部信息。它有一个非常重要的属性 <code>protectionSpace</code>，这里保存了需要认证的保护空间, 每一个 <code>NSURLProtectionSpace</code> 对象都保存了主机地址，端口和认证方法等重要信息。</p>
+<p>在上面的方法中，如果保护空间中的认证方法为 <code>NSURLAuthenticationMethodServerTrust</code>，那么就会使用在上一小节中提到的方法 <code>- [AFSecurityPolicy evaluateServerTrust:forDomain:]</code> 对保护空间中的 <code>serverTrust</code> 以及域名 <code>host</code> 进行认证</p>
+<p>根据认证的结果，会在 <code>completionHandler</code> 中传入不同的 <code>disposition</code> 和 <code>credential</code> 参数。</p>
+</li>
+</ul>
+<h5 id="网络通信信息序列化-反序列化模块"><a href="#网络通信信息序列化-反序列化模块" class="headerlink" title="网络通信信息序列化/反序列化模块"></a>网络通信信息序列化/反序列化模块</h5><p>设置<strong>网络请求</strong>的序列化对象：满足<strong>AFURLRequestSerialization</strong>协议的AFHTTPRequestSerializer对象（当然还有别的子类），配置请求的<strong>cookies</strong>，<strong>timeout</strong>，字符串编码方式（<strong>stringEncoding</strong>），http的<strong>headertype</strong>，<strong>user-agent</strong>等。</p>
+<p>设置<strong>返回数据</strong>的序列化对象：满足<strong>AFURLResponseSerialization</strong>协议的<strong>AFHTTPResponseSerializer</strong>对象（JSON、XML等其他对象默认配置了statuscode和contenttypes），配置返回数据的<strong>acceptableStatusCodes</strong>和<strong>acceptableContentTypes</strong>，检查返回数据<strong>是否合法</strong>并进行转化。</p>
+<p>注：AFJSONResponseSerializer序列化对象的底层是使用Foundation中<strong>内置的NSJSONSerialization对象</strong>实现的。</p>
+<h5 id="对于iOS-UIKit库的扩展"><a href="#对于iOS-UIKit库的扩展" class="headerlink" title="对于iOS UIKit库的扩展"></a>对于iOS UIKit库的扩展</h5><h4 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h4><p>AFNetworking 概述系列文章：<a href="https://draveness.me/afnetworking1/" target="_blank" rel="noopener">https://draveness.me/afnetworking1/</a></p>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
     <title>App启动过程</title>
     <url>/2020/05/12/App%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/</url>
     <content><![CDATA[]]></content>
@@ -87,6 +264,12 @@
       </categories>
   </entry>
   <entry>
+    <title>NSURLSession</title>
+    <url>/2020/05/14/NSURLSession/</url>
+    <content><![CDATA[<h4 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h4><p>NSURLSession：<a href="https://www.jianshu.com/p/e798c6fe26ea" target="_blank" rel="noopener">https://www.jianshu.com/p/e798c6fe26ea</a></p>
+]]></content>
+  </entry>
+  <entry>
     <title>FMDB使用分析</title>
     <url>/2020/05/12/FMDB%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/</url>
     <content><![CDATA[<h3 id="一、基本介绍"><a href="#一、基本介绍" class="headerlink" title="一、基本介绍"></a>一、基本介绍</h3><ul>
@@ -153,6 +336,107 @@
 ]]></content>
       <categories>
         <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>iOS面试题收录（一）</title>
+    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%80%EF%BC%89/</url>
+    <content><![CDATA[<p>主题：是什么？</p>
+<h4 id="关键字const什么含义？"><a href="#关键字const什么含义？" class="headerlink" title="关键字const什么含义？"></a>关键字const什么含义？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> *a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> *a;</span><br><span class="line"><span class="keyword">int</span> * <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> * <span class="keyword">const</span> a;</span><br></pre></td></tr></table></figure>
+
+<p>1&gt;. 前两个的作用是一样：a 是一个常整型数<br>2&gt;. 第三、四个意味着 a 是一个指向常整型数的指针(整型数是不可修改的，但指针可以)<br>3&gt;. 第五个的意思：a 是一个指向整型数的常指针(指针指向的整型数是可以修改的，但指针是不可修改的)<br>4&gt;. 最后一个意味着：a 是一个指向常整型数的常指针(指针指向的整型数是不可修改的，同时指针也是不可修改的)</p>
+<h4 id="import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？"><a href="#import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？" class="headerlink" title="#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？"></a>#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？</h4><ol>
+<li><p>#import是Objective-C导入头文件的关键字，#include是C/C++导入头文件的关键字，使用#import头文件会自动只导入一次，不会重复导入。</p>
+</li>
+<li><p>@class告诉编译器某个类的声明，当执行时，才去查看类的实现文件，可以解决头文件的相互包含。</p>
+</li>
+<li><p>#import&lt;&gt;用来包含系统的头文件，#import””用来包含用户头文件。</p>
+</li>
+</ol>
+<h4 id="property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？"><a href="#property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？" class="headerlink" title="@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？"></a>@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？</h4><p>@property 的本质是:@property = ivar + getter + setter</p>
+<p>“属性” (property)有两大概念：ivar（实例变量）、getter+setter（存取方法）</p>
+<p>“属性” (property)作为 Objective-C 的一项特性，主要的作用就在于封装对象中的数据。 Objective-C 对象通常会把其所需要的数据保存为各种实例变量。实例变量一般通过“存取方法”(access method)来访问。其中，“获取方法” (getter)用于读取变量值，而“设置方法” (setter)用于写入变量值。</p>
+<h4 id="property中有哪些属性关键字以及作用？"><a href="#property中有哪些属性关键字以及作用？" class="headerlink" title="@property中有哪些属性关键字以及作用？"></a>@property中有哪些属性关键字以及作用？</h4><p><strong>线程安全</strong></p>
+<p><strong>nonatomic ：</strong>非原子操作。决定编译器生成的setter和getter方法是否是原子操作，一般使用nonatomic，效率高。<br><strong>atomic：</strong>多线程安全，但是性能低</p>
+<p><strong>内存管理</strong></p>
+<p><strong>strong：</strong>持有特性。setter方法将传入参数先保留，再赋值，传入参数的retaincount会+1。<br><strong>copy ：</strong>拷贝特性。setter方法将传入对象复制一份，需要完全一份新的变量时。<br><strong>assign：</strong>用于基本数据类型<br><strong>retain</strong>：相当于ARC中的strong</p>
+<p><strong>读写操作</strong></p>
+<p><strong>readwrite：</strong>可读可写特性。需要生成getter方法和setter方法<br><strong>readonly：</strong>只读特性。只会生成getter方法，不会生成setter方法，不希望属性在类外改变。</p>
+<h4 id="什么情况使用-weak-关键字，相比-assign-有什么不同？"><a href="#什么情况使用-weak-关键字，相比-assign-有什么不同？" class="headerlink" title="什么情况使用 weak 关键字，相比 assign 有什么不同？"></a>什么情况使用 weak 关键字，相比 assign 有什么不同？</h4><p>1&gt;.在 ARC 中,在有可能出现循环引用的时候,往往要通过让其中一端使用 weak 来解决,比如: delegate 代理属性。<br>2&gt;.自身已经对它进行一次强引用,没有必要再强引用一次,此时也会使用 weak,自定义 IBOutlet 控件属性一般也使用 weak（因为父控件的subViews数组已经对它有一个强引用）。</p>
+<p>不同点：<br>assign 可以用非 OC 对象，而 weak 必须用于 OC 对象。<br>weak 表明该属性定义了一种“非拥有关系”。在属性所指的对象销毁时，属性值会自动清空(nil)。</p>
+<h4 id="用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？"><a href="#用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？" class="headerlink" title="用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？"></a>用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？</h4><p>用 @property 声明 NSString、NSArray、NSDictionary 经常使用 copy 关键字，是因为他们有对应的可变类型：NSMutableString、NSMutableArray、NSMutableDictionary，他们之间可能进行赋值操作（就是把可变的赋值给不可变的），为确保对象中的字符串值不会无意间变动，应该在设置新属性值时拷贝一份。</p>
+<p>1&gt;. 因为父类指针可以指向子类对象,使用 copy 的目的是为了让本对象的属性不受外界影响,使用 copy 无论给我传入是一个可变对象还是不可对象,我本身持有的就是一个不可变的副本。<br>2&gt;. 如果我们使用是 strong ,那么这个属性就有可能指向一个可变对象,如果这个可变对象在外部被修改了,那么会影响该属性。<br>总结：使用copy的目的是，防止把可变类型的对象赋值给不可变类型的对象时，可变类型对象的值发送变化会无意间篡改不可变类型对象原来的值。</p>
+<h4 id="浅拷贝和深拷贝的区别？"><a href="#浅拷贝和深拷贝的区别？" class="headerlink" title="浅拷贝和深拷贝的区别？"></a>浅拷贝和深拷贝的区别？</h4><p><strong>浅拷贝：</strong>对一个对象地址的拷贝。源对象和副本对象是同一对象<br><strong>深拷贝：</strong>对一个对象的拷贝。源对象和副本对象是不同的两个对象</p>
+<h4 id="self-跟self-gt-什么区别？"><a href="#self-跟self-gt-什么区别？" class="headerlink" title="self.跟self-&gt;什么区别？"></a>self.跟self-&gt;什么区别？</h4><p>1&gt;. self.是调用get方法或者set放<br>2&gt;. self是当前本身，是一个指向当前对象的指针<br>3&gt;. self-&gt;是直接访问成员变量</p>
+<h4 id="一个objc对象的isa的指针指向什么？有什么作用？"><a href="#一个objc对象的isa的指针指向什么？有什么作用？" class="headerlink" title="一个objc对象的isa的指针指向什么？有什么作用？"></a>一个objc对象的isa的指针指向什么？有什么作用？</h4><p>指向他的类对象,从而可以找到对象上的方法</p>
+<h4 id="frame-和-bounds-有什么不同？"><a href="#frame-和-bounds-有什么不同？" class="headerlink" title="frame 和 bounds 有什么不同？"></a>frame 和 bounds 有什么不同？</h4><p><strong>frame：</strong>该view在父view坐标系统中的位置和大小。(参照点是父view的坐标系统)</p>
+<p><strong>bounds：</strong>该view在本身坐标系统中的位置和大小。(参照点是本身坐标系统)</p>
+<h4 id="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"><a href="#Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？" class="headerlink" title="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"></a>Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？</h4><p>OC不可以多继承，OC是单继承。有时可以用分类和协议来代替多继承<br>可以实现多个接口（协议）<br>Category是类别；一般情况用分类好，用Category去重写类的方法，仅对本Category有效，不会影响到其他类与原有类的关系。</p>
+<h4 id="Object-C有私有方法吗？私有变量呢？"><a href="#Object-C有私有方法吗？私有变量呢？" class="headerlink" title="Object-C有私有方法吗？私有变量呢？"></a>Object-C有私有方法吗？私有变量呢？</h4><p>1&gt;.OC没有类似@private的修饰词来修饰方法，只要写在.h文件中，就是公共方法<br>2&gt;. 如果你不在.h文件中声明，只在.m文件中实现，或在.m文件的Class Extension里声明，那么基本上和私有方法差不多，可以使用类扩展（Extension）来增加私有方法和私有变量<br>3&gt;. 使用private修饰的全局变量是私有变量</p>
+<h4 id="用伪代码写一个线程安全的单例模式"><a href="#用伪代码写一个线程安全的单例模式" class="headerlink" title="用伪代码写一个线程安全的单例模式"></a>用伪代码写一个线程安全的单例模式</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">static</span> XXManager * instance = <span class="literal">nil</span>;</span><br><span class="line">+ (<span class="keyword">instancetype</span>)shareInstance &#123;</span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [[<span class="keyword">self</span> alloc] init];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">id</span>)allocWithZone:(<span class="keyword">struct</span> _NSZone *)zone &#123;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [<span class="keyword">super</span> allocWithZone:zone];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line">- (<span class="keyword">id</span>)copyWithZone:(<span class="built_in">NSZone</span> *)zone &#123;</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="category-类别-和-extension-扩展-的区别"><a href="#category-类别-和-extension-扩展-的区别" class="headerlink" title="category(类别) 和 extension(扩展) 的区别"></a>category(类别) 和 extension(扩展) 的区别</h4><p>1&gt;. 类别有名字，类扩展没有分类名字，是一种特殊的分类。<br>2&gt;. 类别只能扩展方法（属性仅仅是声明，并没真正实现），类扩展可以扩展属性、成员变量和方法。<br>3&gt;. 继承可以增加，修改或者删除方法，并且可以增加属性。</p>
+<h4 id="delegate-和-notification-的区别"><a href="#delegate-和-notification-的区别" class="headerlink" title="delegate 和 notification 的区别"></a>delegate 和 notification 的区别</h4><p>二者都用于传递消息，不同之处主要在于一个是一对一的，另一个是一对多的<br><strong>notification：</strong>不需要两者之间有联系,实现一对多消息的转发<br><strong>delegate：</strong>需要两者之间必须建立联系，不然没法调用代理的方法</p>
+<h4 id="Objective-C-如何对内存管理的，说说你的看法和解决方法？"><a href="#Objective-C-如何对内存管理的，说说你的看法和解决方法？" class="headerlink" title="Objective-C 如何对内存管理的，说说你的看法和解决方法？"></a>Objective-C 如何对内存管理的，说说你的看法和解决方法？</h4><p>Objective-C的内存管理主要有三种方式ARC(自动内存计数)、手动内存计数、内存池。<br>1&gt;. 自动内存计数ARC：由Xcode自动在App编译阶段，在代码中添加内存管理代码。<br>2&gt;. 手动内存计数MRC：遵循内存谁申请、谁释放；谁添加，谁释放的原则。<br>3&gt;. 内存释放池Release Pool：把需要释放的内存统一放在一个池子中，当池子被抽干后(drain)，池子中所有的内存空间也被自动释放掉。内存池的释放操作分为自动和手动。自动释放受runloop机制影响。</p>
+<h4 id="GCD-与-NSOperation-的区别"><a href="#GCD-与-NSOperation-的区别" class="headerlink" title="GCD 与 NSOperation 的区别"></a>GCD 与 NSOperation 的区别</h4><p><strong>NSOperation:</strong>相对于GCD来说，更加强大。可以给operation之间添加依赖关系、取消一个正在执行的operation、暂停和恢复operationQueue等</p>
+<p><strong>GCD:</strong> 是一种更轻量级的，以FIFO(先进先出，后进后出)的顺序执行并发任务。使用GCD我们并不用关心任务的调度情况，而是系统会自动帮我们处理。但是GCD的短板也是非常明显的，比如我们想要给任务之间添加依赖关系、取消或者暂停一个正在执行的任务时就会变得束手无策。</p>
+<h4 id="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"><a href="#OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？" class="headerlink" title="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"></a>OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建线程的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="built_in">NSThread</span> detachNewThreadSelector:<span class="literal">nil</span> toTarget:<span class="literal">nil</span> withObject:<span class="literal">nil</span>]</span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorInBackground:<span class="literal">nil</span> withObject:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSThread</span> alloc] initWithTarget:<span class="literal">nil</span> selector:<span class="literal">nil</span> object:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_global_queue(<span class="number">0</span>, <span class="number">0</span>), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> new] addOperation:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 主线程中执行代码的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorOnMainThread:<span class="literal">nil</span> withObject:<span class="literal">nil</span> waitUntilDone:<span class="literal">YES</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_main_queue(), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> mainQueue] addOperation:<span class="literal">nil</span>];</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="runloop-和线程有什么关系"><a href="#runloop-和线程有什么关系" class="headerlink" title="runloop 和线程有什么关系?"></a>runloop 和线程有什么关系?</h4><p>runloop与线程是一一对应的，一个runloop对应一个核心的线程，为什么说是核心的，是因为runloop是可以嵌套的，但是核心的只能有一个，他们的关系保存在一个全局的字典里。 runloop是来管理线程的，当线程的runloop被开启后，线程会在执行完任务后进入休眠状态，有了任务就会被唤醒去执行任务。 runloop在第一次获取时被创建，在线程结束时被销毁。 对于主线程来说，runloop在程序一启动就默认创建好了。 对于子线程来说，runloop是懒加载的，只有当我们使用的时候才会创建，所以在子线程用定时器要注意：确保子线程的runloop被创建，不然定时器不会回调。</p>
+<h4 id="介绍下layoutSubview和drawRect"><a href="#介绍下layoutSubview和drawRect" class="headerlink" title="介绍下layoutSubview和drawRect"></a>介绍下layoutSubview和drawRect</h4><p>layoutSubviews调用情况</p>
+<ul>
+<li><p>init初始化UIView不会触发调用 </p>
+</li>
+<li><p>addSubview会触发调用 </p>
+</li>
+<li><p>改变view的width和height的时候回触发</p>
+</li>
+<li><p>调用 一个UIScrollView滚动会触发调用 </p>
+</li>
+<li><p>旋转screen会触发调用 </p>
+</li>
+<li><p>改变一个UIView大小的时候会触发</p>
+</li>
+<li><p>superView的layoutSubviews事件 直接调用setLayoutSubviews会触发调用 </p>
+</li>
+<li><p>-(void)viewWillAppear:(BOOL)animated会触发一次调用</p>
+</li>
+<li><p>-(void)viewDidAppear:(BOOL)animated 看情况</p>
+<p>可能有调用 drawRect调用情况 </p>
+</li>
+<li><p>如果UIView没有设置frame大小，直接导致drawRect不能被自动调用。 </p>
+</li>
+<li><p>drawRect在loadView和viewDidLoad这两个方法之后调用 调用sizeToFit后自动调用drawRect </p>
+</li>
+<li><p>通过设置contentMode值为UIViewContentModeRedraw。那么每次设置或者更改frame自动调用drawRect。 </p>
+</li>
+<li><p>直接调用setNeedsDisplay或者setNeedsDisplayInRect会触发调用</p>
+</li>
+</ul>
+<h4 id="UIview-和CAlayer-是什么关系-你-CLayer做过什么"><a href="#UIview-和CAlayer-是什么关系-你-CLayer做过什么" class="headerlink" title="UIview 和CAlayer 是什么关系? 你 CLayer做过什么?"></a>UIview 和CAlayer 是什么关系? 你 CLayer做过什么?</h4><p>区别： 首先UIView可以响应事件，Layer不可以.</p>
+<p>关系：</p>
+<ol>
+<li>UIView是CALayer的delegate </li>
+<li>UIView主要处理事件，CALayer负责绘制就更好 </li>
+<li>每个 UIView 内部都有一个 CALayer 在背后提供内容的绘制和显示，并且 UIView 的尺寸样式都由内部的 Layer 所提供。两者都有树状层级结构，layer 内部有 SubLayers，View 内部有 SubViews.但是 Layer 比 View 多了个AnchorPoint </li>
+</ol>
+<p>用layer做过什么：创建隐式动画 绘制边框圆角</p>
+<h4 id="iOS-UIViewController的完整生命周期"><a href="#iOS-UIViewController的完整生命周期" class="headerlink" title="iOS UIViewController的完整生命周期?"></a>iOS UIViewController的完整生命周期?</h4><p>按照执行顺序排列：</p>
+<p>1&gt;. <code>initWithCoder：</code>通过nib文件初始化时触发。<br>2&gt;. <code>awakeFromNib：</code>nib文件被加载的时候，会发生一个<code>awakeFromNib</code>的消息到nib文件中的每个对象。<br>3&gt;. <code>loadView：</code>开始加载视图控制器自带的view。<br>4&gt;. <code>viewDidLoad：</code>视图控制器的view被加载完成。<br>5&gt;. <code>viewWillAppear：</code>视图控制器的view将要显示在window上。<br>6&gt;. <code>updateViewConstraints：</code>视图控制器的view开始更新AutoLayout约束。<br>7&gt;. <code>viewWillLayoutSubviews：</code>视图控制器的view将要更新内容视图的位置。<br>8&gt;. <code>viewDidLayoutSubviews：</code>视图控制器的view已经更新视图的位置。<br>9&gt;. <code>viewDidAppear：</code>视图控制器的view已经展示到window上。<br>10&gt;. <code>viewWillDisappear：</code>视图控制器的view将要从window上消失。<br>11&gt;.<code>viewDidDisappear：</code>视图控制器的view已经从window上消失。</p>
+<h4 id="tableView的重用机制？"><a href="#tableView的重用机制？" class="headerlink" title="tableView的重用机制？"></a>tableView的重用机制？</h4><p>UITableView 通过重用单元格来达到节省内存的目的: 通过为每个单元格指定一个重用标识符，即指定了单元格的种类,当屏幕上的单元格滑出屏幕时，系统会把这个单元格添加到重用队列中，等待被重用，当有新单元格从屏幕外滑入屏幕内时，从重用队列中找看有没有可以重用的单元格，如果有，就拿过来用，如果没有就创建一个来使用</p>
+<h4 id="NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的"><a href="#NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的" class="headerlink" title="NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?"></a>NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?</h4><ol>
+<li><p>下载 NSURLConnection下载文件时，先是将整个文件下载到内存，然后再写入到沙盒，如果文件比较大，就会出现内存暴涨的情况。 而使用NSURLSessionUploadTask下载文件，会默认下载到沙盒中的tem文件中，不会出现内存暴涨的情况，但是在下载完成后会把tem中的临时文件删除，需要在初始化任务方法时，在completionHandler回调中增加保存文件的代码 </p>
+</li>
+<li><p>请求方法的控制 NSURLConnection实例化对象，实例化开始，默认请求就发送(同步发送),不需要调用start方法。而cancel可以停止请求的发送，停止后不能继续访问，需要创建新的请求。 NSURLSession有三个控制方法，取消(cancel)、暂停(suspend)、继续(resume)，暂停以后可以通过继续恢复当前的请求任务。 使用NSURLSession进行断点下载更加便捷. NSURLSession的构造方法（sessionWithConfiguration:delegate:delegateQueue）中有一个NSURLSessionConfiguration类的参数可以设置配置信息，其决定了cookie，安全和高速缓存策略，最大主机连接数，资源管理，网络超时等配置。NSURLConnection不能进行这个配置，相比较与NSURLConnection依赖与一个全局的配置对象，缺乏灵活性而言，NSURLSession有很大的改进</p>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>iOS面试汇总</category>
       </categories>
   </entry>
   <entry>
@@ -483,113 +767,6 @@
       </categories>
   </entry>
   <entry>
-    <title>iOS面试题收录（一）</title>
-    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%80%EF%BC%89/</url>
-    <content><![CDATA[<p>主题：是什么？</p>
-<h4 id="关键字const什么含义？"><a href="#关键字const什么含义？" class="headerlink" title="关键字const什么含义？"></a>关键字const什么含义？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> *a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> *a;</span><br><span class="line"><span class="keyword">int</span> * <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> * <span class="keyword">const</span> a;</span><br></pre></td></tr></table></figure>
-
-<p>1&gt;. 前两个的作用是一样：a 是一个常整型数<br>2&gt;. 第三、四个意味着 a 是一个指向常整型数的指针(整型数是不可修改的，但指针可以)<br>3&gt;. 第五个的意思：a 是一个指向整型数的常指针(指针指向的整型数是可以修改的，但指针是不可修改的)<br>4&gt;. 最后一个意味着：a 是一个指向常整型数的常指针(指针指向的整型数是不可修改的，同时指针也是不可修改的)</p>
-<h4 id="import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？"><a href="#import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？" class="headerlink" title="#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？"></a>#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？</h4><ol>
-<li><p>#import是Objective-C导入头文件的关键字，#include是C/C++导入头文件的关键字，使用#import头文件会自动只导入一次，不会重复导入。</p>
-</li>
-<li><p>@class告诉编译器某个类的声明，当执行时，才去查看类的实现文件，可以解决头文件的相互包含。</p>
-</li>
-<li><p>#import&lt;&gt;用来包含系统的头文件，#import””用来包含用户头文件。</p>
-</li>
-</ol>
-<h4 id="property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？"><a href="#property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？" class="headerlink" title="@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？"></a>@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？</h4><p>@property 的本质是:@property = ivar + getter + setter</p>
-<p>“属性” (property)有两大概念：ivar（实例变量）、getter+setter（存取方法）</p>
-<p>“属性” (property)作为 Objective-C 的一项特性，主要的作用就在于封装对象中的数据。 Objective-C 对象通常会把其所需要的数据保存为各种实例变量。实例变量一般通过“存取方法”(access method)来访问。其中，“获取方法” (getter)用于读取变量值，而“设置方法” (setter)用于写入变量值。</p>
-<h4 id="property中有哪些属性关键字以及作用？"><a href="#property中有哪些属性关键字以及作用？" class="headerlink" title="@property中有哪些属性关键字以及作用？"></a>@property中有哪些属性关键字以及作用？</h4><p><strong>线程安全</strong></p>
-<p><strong>nonatomic ：</strong>非原子操作。决定编译器生成的setter和getter方法是否是原子操作，一般使用nonatomic，效率高。<br><strong>atomic：</strong>多线程安全，但是性能低</p>
-<p><strong>内存管理</strong></p>
-<p><strong>strong：</strong>持有特性。setter方法将传入参数先保留，再赋值，传入参数的retaincount会+1。<br><strong>copy ：</strong>拷贝特性。setter方法将传入对象复制一份，需要完全一份新的变量时。<br><strong>assign：</strong>用于基本数据类型<br><strong>retain</strong>：相当于ARC中的strong</p>
-<p><strong>读写操作</strong></p>
-<p><strong>readwrite：</strong>可读可写特性。需要生成getter方法和setter方法<br><strong>readonly：</strong>只读特性。只会生成getter方法，不会生成setter方法，不希望属性在类外改变。</p>
-<h4 id="什么情况使用-weak-关键字，相比-assign-有什么不同？"><a href="#什么情况使用-weak-关键字，相比-assign-有什么不同？" class="headerlink" title="什么情况使用 weak 关键字，相比 assign 有什么不同？"></a>什么情况使用 weak 关键字，相比 assign 有什么不同？</h4><p>1&gt;.在 ARC 中,在有可能出现循环引用的时候,往往要通过让其中一端使用 weak 来解决,比如: delegate 代理属性。<br>2&gt;.自身已经对它进行一次强引用,没有必要再强引用一次,此时也会使用 weak,自定义 IBOutlet 控件属性一般也使用 weak（因为父控件的subViews数组已经对它有一个强引用）。</p>
-<p>不同点：<br>assign 可以用非 OC 对象，而 weak 必须用于 OC 对象。<br>weak 表明该属性定义了一种“非拥有关系”。在属性所指的对象销毁时，属性值会自动清空(nil)。</p>
-<h4 id="用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？"><a href="#用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？" class="headerlink" title="用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？"></a>用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？</h4><p>用 @property 声明 NSString、NSArray、NSDictionary 经常使用 copy 关键字，是因为他们有对应的可变类型：NSMutableString、NSMutableArray、NSMutableDictionary，他们之间可能进行赋值操作（就是把可变的赋值给不可变的），为确保对象中的字符串值不会无意间变动，应该在设置新属性值时拷贝一份。</p>
-<p>1&gt;. 因为父类指针可以指向子类对象,使用 copy 的目的是为了让本对象的属性不受外界影响,使用 copy 无论给我传入是一个可变对象还是不可对象,我本身持有的就是一个不可变的副本。<br>2&gt;. 如果我们使用是 strong ,那么这个属性就有可能指向一个可变对象,如果这个可变对象在外部被修改了,那么会影响该属性。<br>总结：使用copy的目的是，防止把可变类型的对象赋值给不可变类型的对象时，可变类型对象的值发送变化会无意间篡改不可变类型对象原来的值。</p>
-<h4 id="浅拷贝和深拷贝的区别？"><a href="#浅拷贝和深拷贝的区别？" class="headerlink" title="浅拷贝和深拷贝的区别？"></a>浅拷贝和深拷贝的区别？</h4><p><strong>浅拷贝：</strong>对一个对象地址的拷贝。源对象和副本对象是同一对象<br><strong>深拷贝：</strong>对一个对象的拷贝。源对象和副本对象是不同的两个对象</p>
-<h4 id="self-跟self-gt-什么区别？"><a href="#self-跟self-gt-什么区别？" class="headerlink" title="self.跟self-&gt;什么区别？"></a>self.跟self-&gt;什么区别？</h4><p>1&gt;. self.是调用get方法或者set放<br>2&gt;. self是当前本身，是一个指向当前对象的指针<br>3&gt;. self-&gt;是直接访问成员变量</p>
-<h4 id="一个objc对象的isa的指针指向什么？有什么作用？"><a href="#一个objc对象的isa的指针指向什么？有什么作用？" class="headerlink" title="一个objc对象的isa的指针指向什么？有什么作用？"></a>一个objc对象的isa的指针指向什么？有什么作用？</h4><p>指向他的类对象,从而可以找到对象上的方法</p>
-<h4 id="frame-和-bounds-有什么不同？"><a href="#frame-和-bounds-有什么不同？" class="headerlink" title="frame 和 bounds 有什么不同？"></a>frame 和 bounds 有什么不同？</h4><p><strong>frame：</strong>该view在父view坐标系统中的位置和大小。(参照点是父view的坐标系统)</p>
-<p><strong>bounds：</strong>该view在本身坐标系统中的位置和大小。(参照点是本身坐标系统)</p>
-<h4 id="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"><a href="#Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？" class="headerlink" title="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"></a>Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？</h4><p>OC不可以多继承，OC是单继承。有时可以用分类和协议来代替多继承<br>可以实现多个接口（协议）<br>Category是类别；一般情况用分类好，用Category去重写类的方法，仅对本Category有效，不会影响到其他类与原有类的关系。</p>
-<h4 id="Object-C有私有方法吗？私有变量呢？"><a href="#Object-C有私有方法吗？私有变量呢？" class="headerlink" title="Object-C有私有方法吗？私有变量呢？"></a>Object-C有私有方法吗？私有变量呢？</h4><p>1&gt;.OC没有类似@private的修饰词来修饰方法，只要写在.h文件中，就是公共方法<br>2&gt;. 如果你不在.h文件中声明，只在.m文件中实现，或在.m文件的Class Extension里声明，那么基本上和私有方法差不多，可以使用类扩展（Extension）来增加私有方法和私有变量<br>3&gt;. 使用private修饰的全局变量是私有变量</p>
-<h4 id="用伪代码写一个线程安全的单例模式"><a href="#用伪代码写一个线程安全的单例模式" class="headerlink" title="用伪代码写一个线程安全的单例模式"></a>用伪代码写一个线程安全的单例模式</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">static</span> XXManager * instance = <span class="literal">nil</span>;</span><br><span class="line">+ (<span class="keyword">instancetype</span>)shareInstance &#123;</span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [[<span class="keyword">self</span> alloc] init];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">id</span>)allocWithZone:(<span class="keyword">struct</span> _NSZone *)zone &#123;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [<span class="keyword">super</span> allocWithZone:zone];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line">- (<span class="keyword">id</span>)copyWithZone:(<span class="built_in">NSZone</span> *)zone &#123;</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="category-类别-和-extension-扩展-的区别"><a href="#category-类别-和-extension-扩展-的区别" class="headerlink" title="category(类别) 和 extension(扩展) 的区别"></a>category(类别) 和 extension(扩展) 的区别</h4><p>1&gt;. 类别有名字，类扩展没有分类名字，是一种特殊的分类。<br>2&gt;. 类别只能扩展方法（属性仅仅是声明，并没真正实现），类扩展可以扩展属性、成员变量和方法。<br>3&gt;. 继承可以增加，修改或者删除方法，并且可以增加属性。</p>
-<h4 id="delegate-和-notification-的区别"><a href="#delegate-和-notification-的区别" class="headerlink" title="delegate 和 notification 的区别"></a>delegate 和 notification 的区别</h4><p>二者都用于传递消息，不同之处主要在于一个是一对一的，另一个是一对多的<br><strong>notification：</strong>不需要两者之间有联系,实现一对多消息的转发<br><strong>delegate：</strong>需要两者之间必须建立联系，不然没法调用代理的方法</p>
-<h4 id="Objective-C-如何对内存管理的，说说你的看法和解决方法？"><a href="#Objective-C-如何对内存管理的，说说你的看法和解决方法？" class="headerlink" title="Objective-C 如何对内存管理的，说说你的看法和解决方法？"></a>Objective-C 如何对内存管理的，说说你的看法和解决方法？</h4><p>Objective-C的内存管理主要有三种方式ARC(自动内存计数)、手动内存计数、内存池。<br>1&gt;. 自动内存计数ARC：由Xcode自动在App编译阶段，在代码中添加内存管理代码。<br>2&gt;. 手动内存计数MRC：遵循内存谁申请、谁释放；谁添加，谁释放的原则。<br>3&gt;. 内存释放池Release Pool：把需要释放的内存统一放在一个池子中，当池子被抽干后(drain)，池子中所有的内存空间也被自动释放掉。内存池的释放操作分为自动和手动。自动释放受runloop机制影响。</p>
-<h4 id="GCD-与-NSOperation-的区别"><a href="#GCD-与-NSOperation-的区别" class="headerlink" title="GCD 与 NSOperation 的区别"></a>GCD 与 NSOperation 的区别</h4><p><strong>NSOperation:</strong>相对于GCD来说，更加强大。可以给operation之间添加依赖关系、取消一个正在执行的operation、暂停和恢复operationQueue等</p>
-<p><strong>GCD:</strong> 是一种更轻量级的，以FIFO(先进先出，后进后出)的顺序执行并发任务。使用GCD我们并不用关心任务的调度情况，而是系统会自动帮我们处理。但是GCD的短板也是非常明显的，比如我们想要给任务之间添加依赖关系、取消或者暂停一个正在执行的任务时就会变得束手无策。</p>
-<h4 id="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"><a href="#OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？" class="headerlink" title="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"></a>OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建线程的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="built_in">NSThread</span> detachNewThreadSelector:<span class="literal">nil</span> toTarget:<span class="literal">nil</span> withObject:<span class="literal">nil</span>]</span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorInBackground:<span class="literal">nil</span> withObject:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSThread</span> alloc] initWithTarget:<span class="literal">nil</span> selector:<span class="literal">nil</span> object:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_global_queue(<span class="number">0</span>, <span class="number">0</span>), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> new] addOperation:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 主线程中执行代码的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorOnMainThread:<span class="literal">nil</span> withObject:<span class="literal">nil</span> waitUntilDone:<span class="literal">YES</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_main_queue(), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> mainQueue] addOperation:<span class="literal">nil</span>];</span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="runloop-和线程有什么关系"><a href="#runloop-和线程有什么关系" class="headerlink" title="runloop 和线程有什么关系?"></a>runloop 和线程有什么关系?</h4><p>runloop与线程是一一对应的，一个runloop对应一个核心的线程，为什么说是核心的，是因为runloop是可以嵌套的，但是核心的只能有一个，他们的关系保存在一个全局的字典里。 runloop是来管理线程的，当线程的runloop被开启后，线程会在执行完任务后进入休眠状态，有了任务就会被唤醒去执行任务。 runloop在第一次获取时被创建，在线程结束时被销毁。 对于主线程来说，runloop在程序一启动就默认创建好了。 对于子线程来说，runloop是懒加载的，只有当我们使用的时候才会创建，所以在子线程用定时器要注意：确保子线程的runloop被创建，不然定时器不会回调。</p>
-<h4 id="介绍下layoutSubview和drawRect"><a href="#介绍下layoutSubview和drawRect" class="headerlink" title="介绍下layoutSubview和drawRect"></a>介绍下layoutSubview和drawRect</h4><p>layoutSubviews调用情况</p>
-<ul>
-<li><p>init初始化UIView不会触发调用 </p>
-</li>
-<li><p>addSubview会触发调用 </p>
-</li>
-<li><p>改变view的width和height的时候回触发</p>
-</li>
-<li><p>调用 一个UIScrollView滚动会触发调用 </p>
-</li>
-<li><p>旋转screen会触发调用 </p>
-</li>
-<li><p>改变一个UIView大小的时候会触发</p>
-</li>
-<li><p>superView的layoutSubviews事件 直接调用setLayoutSubviews会触发调用 </p>
-</li>
-<li><p>-(void)viewWillAppear:(BOOL)animated会触发一次调用</p>
-</li>
-<li><p>-(void)viewDidAppear:(BOOL)animated 看情况</p>
-<p>可能有调用 drawRect调用情况 </p>
-</li>
-<li><p>如果UIView没有设置frame大小，直接导致drawRect不能被自动调用。 </p>
-</li>
-<li><p>drawRect在loadView和viewDidLoad这两个方法之后调用 调用sizeToFit后自动调用drawRect </p>
-</li>
-<li><p>通过设置contentMode值为UIViewContentModeRedraw。那么每次设置或者更改frame自动调用drawRect。 </p>
-</li>
-<li><p>直接调用setNeedsDisplay或者setNeedsDisplayInRect会触发调用</p>
-</li>
-</ul>
-<h4 id="UIview-和CAlayer-是什么关系-你-CLayer做过什么"><a href="#UIview-和CAlayer-是什么关系-你-CLayer做过什么" class="headerlink" title="UIview 和CAlayer 是什么关系? 你 CLayer做过什么?"></a>UIview 和CAlayer 是什么关系? 你 CLayer做过什么?</h4><p>区别： 首先UIView可以响应事件，Layer不可以.</p>
-<p>关系：</p>
-<ol>
-<li>UIView是CALayer的delegate </li>
-<li>UIView主要处理事件，CALayer负责绘制就更好 </li>
-<li>每个 UIView 内部都有一个 CALayer 在背后提供内容的绘制和显示，并且 UIView 的尺寸样式都由内部的 Layer 所提供。两者都有树状层级结构，layer 内部有 SubLayers，View 内部有 SubViews.但是 Layer 比 View 多了个AnchorPoint </li>
-</ol>
-<p>用layer做过什么：创建隐式动画 绘制边框圆角</p>
-<h4 id="iOS-UIViewController的完整生命周期"><a href="#iOS-UIViewController的完整生命周期" class="headerlink" title="iOS UIViewController的完整生命周期?"></a>iOS UIViewController的完整生命周期?</h4><p>按照执行顺序排列：</p>
-<p>1&gt;. <code>initWithCoder：</code>通过nib文件初始化时触发。<br>2&gt;. <code>awakeFromNib：</code>nib文件被加载的时候，会发生一个<code>awakeFromNib</code>的消息到nib文件中的每个对象。<br>3&gt;. <code>loadView：</code>开始加载视图控制器自带的view。<br>4&gt;. <code>viewDidLoad：</code>视图控制器的view被加载完成。<br>5&gt;. <code>viewWillAppear：</code>视图控制器的view将要显示在window上。<br>6&gt;. <code>updateViewConstraints：</code>视图控制器的view开始更新AutoLayout约束。<br>7&gt;. <code>viewWillLayoutSubviews：</code>视图控制器的view将要更新内容视图的位置。<br>8&gt;. <code>viewDidLayoutSubviews：</code>视图控制器的view已经更新视图的位置。<br>9&gt;. <code>viewDidAppear：</code>视图控制器的view已经展示到window上。<br>10&gt;. <code>viewWillDisappear：</code>视图控制器的view将要从window上消失。<br>11&gt;.<code>viewDidDisappear：</code>视图控制器的view已经从window上消失。</p>
-<h4 id="tableView的重用机制？"><a href="#tableView的重用机制？" class="headerlink" title="tableView的重用机制？"></a>tableView的重用机制？</h4><p>UITableView 通过重用单元格来达到节省内存的目的: 通过为每个单元格指定一个重用标识符，即指定了单元格的种类,当屏幕上的单元格滑出屏幕时，系统会把这个单元格添加到重用队列中，等待被重用，当有新单元格从屏幕外滑入屏幕内时，从重用队列中找看有没有可以重用的单元格，如果有，就拿过来用，如果没有就创建一个来使用</p>
-<h4 id="NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的"><a href="#NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的" class="headerlink" title="NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?"></a>NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?</h4><ol>
-<li><p>下载 NSURLConnection下载文件时，先是将整个文件下载到内存，然后再写入到沙盒，如果文件比较大，就会出现内存暴涨的情况。 而使用NSURLSessionUploadTask下载文件，会默认下载到沙盒中的tem文件中，不会出现内存暴涨的情况，但是在下载完成后会把tem中的临时文件删除，需要在初始化任务方法时，在completionHandler回调中增加保存文件的代码 </p>
-</li>
-<li><p>请求方法的控制 NSURLConnection实例化对象，实例化开始，默认请求就发送(同步发送),不需要调用start方法。而cancel可以停止请求的发送，停止后不能继续访问，需要创建新的请求。 NSURLSession有三个控制方法，取消(cancel)、暂停(suspend)、继续(resume)，暂停以后可以通过继续恢复当前的请求任务。 使用NSURLSession进行断点下载更加便捷. NSURLSession的构造方法（sessionWithConfiguration:delegate:delegateQueue）中有一个NSURLSessionConfiguration类的参数可以设置配置信息，其决定了cookie，安全和高速缓存策略，最大主机连接数，资源管理，网络超时等配置。NSURLConnection不能进行这个配置，相比较与NSURLConnection依赖与一个全局的配置对象，缺乏灵活性而言，NSURLSession有很大的改进</p>
-</li>
-</ol>
-]]></content>
-      <categories>
-        <category>iOS面试汇总</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>iOS面试题收录（三）</title>
-    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%89%EF%BC%89/</url>
-    <content><![CDATA[<p>主题：高级问题</p>
-]]></content>
-  </entry>
-  <entry>
     <title>iOS面试题收录（二）</title>
     <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
     <content><![CDATA[<p>主题：怎么做？</p>
@@ -658,6 +835,12 @@
       <categories>
         <category>iOS面试汇总</category>
       </categories>
+  </entry>
+  <entry>
+    <title>iOS面试题收录（三）</title>
+    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%89%EF%BC%89/</url>
+    <content><![CDATA[<p>主题：高级问题</p>
+]]></content>
   </entry>
   <entry>
     <title>iOS高级必备知识</title>
