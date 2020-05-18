@@ -220,71 +220,61 @@ NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHand
 
 ### 四、文件的上传
 
-我们可以使用NSURLSessionUploadTask进行文件的上传，使用NSURLSessionUploadTask文件上传共有两种方法：
+我们可以使用NSURLSessionUploadTask进行文件的上传
 
-方法1：
-
-```objective-c
-NSURLSessionUploadTask *task =
-[[NSURLSession sharedSession] uploadTaskWithRequest:request
-                                           fromFile:fileName
-                                  completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-}];
-```
-
-方法2：
+**创建方法**（基于 `NSURLSession` 对象）
 
 ```objective-c
-[self.session uploadTaskWithRequest:request
-                            fromData:body
-                   completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
- NSLog(@"-------%@", [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil]);
- }];
+// 使用 NSURLRequest 对象创建，上传时指定文件源
+- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL;  
+
+// 使用 NSURLRequest 对象创建，上传时指定数据源   
+- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData;  
+  
+- (NSURLSessionUploadTask *)uploadTaskWithStreamedRequest:(NSURLRequest *)request;
 ```
+
+
+
+**CompletionHandler**
+
+```objective-c
+- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;    
+
+- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;
+```
+
+
 
 ### 五、文件的下载
 
-我们可以使用NSURLSessionDownloadTask实现文件的下载。NSURLSession使用代理方法也可以实现大文件下载，但是它实现不了断点下载，所以一般不用。
+我们可以使用NSURLSessionDownloadTask实现文件的下载。
+
+`NSURLSessionDownloadTask` 主要用于 **文件下载**，它针对大文件的网络请求做了更多的处理，如：下载进度、断点续传等。
+
+**创建方法**（基于 `NSURLSession` 对象）
 
 ```objective-c
-- (void)NSURLSessionDownloadTaskTest {
-    // 1.创建url
-    NSString *urlString = [NSString stringWithFormat:@"http://www.xxx.com/test.mp3"];
-    // 一些特殊字符编码
-    urlString = [urlString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-    NSURL *url = [NSURL URLWithString:urlString];
+// 使用 NSURLRequest 对象创建
+- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request;    
+    
+// 使用 NSURL 对象创建
+- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url;    
+  
+// 使用之前已经下载的数据来创建
+- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData;
+```
 
-    // 2.创建请求
-    NSURLRequest *request = [NSURLRequest requestWithURL:url];
 
-    // 3.创建会话，采用苹果提供全局的共享session
-    NSURLSession *sharedSession = [NSURLSession sharedSession];
 
-    // 4.创建任务
-    NSURLSessionDownloadTask *downloadTask = [sharedSession downloadTaskWithRequest:request completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-        if (error == nil) {
-            // location:下载任务完成之后,文件存储的位置，这个路径默认是在tmp文件夹下!
-            // 只会临时保存，因此需要将其另存
-            NSLog(@"location:%@",location.path);
+**CompletionHandler**
 
-            // 采用模拟器测试，为了方便将其下载到Mac桌面
-//            NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
-            NSString *filePath = @"/Users/lifengfeng/Desktop/test.mp3";
-            NSError *fileError;
-            [[NSFileManager defaultManager] copyItemAtPath:location.path toPath:filePath error:&fileError];
-            if (fileError == nil) {
-                NSLog(@"file save success");
-            } else {
-                NSLog(@"file save error: %@",fileError);
-            }
-        } else {
-            NSLog(@"download error:%@",error);
-        }
-    }];
+```objective-c
+- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;    
 
-    // 5.开启任务
-    [downloadTask resume];
-}
+- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;    
+
+- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;
 ```
 
 
@@ -293,3 +283,6 @@ NSURLSessionUploadTask *task =
 
 NSURLSession：https://www.jianshu.com/p/e798c6fe26ea
 
+iOS 网络(1)——NSURLSession: http://chuquan.me/2019/07/21/ios-network-nsurlsession/
+
+iOS NSURLSession 详解：https://juejin.im/entry/58aacabcac502e006973ce03
