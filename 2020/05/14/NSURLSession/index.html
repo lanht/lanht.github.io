@@ -93,7 +93,7 @@
 <meta property="og:image" content="http://yoursite.com/2020/05/14/NSURLSession/2.jpg">
 <meta property="og:image" content="http://yoursite.com/2020/05/14/NSURLSession/3.jpg">
 <meta property="article:published_time" content="2020-05-14T03:27:49.000Z">
-<meta property="article:modified_time" content="2020-05-18T08:11:30.747Z">
+<meta property="article:modified_time" content="2020-05-20T06:44:41.081Z">
 <meta property="article:author" content="Lanht">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://yoursite.com/2020/05/14/NSURLSession/1.jpg">
@@ -464,8 +464,9 @@
 <p><strong>CompletionHandler</strong></p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;</span><br></pre></td></tr></table></figure>
 
-
-
+<p><strong>关于分片上传和断点续传上传</strong></p>
+<p>可以参考阿里云AliyunOSSiOS源码及文档</p>
+<p>文档地址：<a href="https://help.aliyun.com/document_detail/31850.html?spm=a2c4g.11186623.6.610.62d72201Fvv00V" target="_blank" rel="noopener">https://help.aliyun.com/document_detail/31850.html?spm=a2c4g.11186623.6.610.62d72201Fvv00V</a></p>
 <h3 id="五、文件的下载"><a href="#五、文件的下载" class="headerlink" title="五、文件的下载"></a>五、文件的下载</h3><p>我们可以使用NSURLSessionDownloadTask实现文件的下载。</p>
 <p><code>NSURLSessionDownloadTask</code> 主要用于 <strong>文件下载</strong>，它针对大文件的网络请求做了更多的处理，如：下载进度、断点续传等。</p>
 <p><strong>创建方法</strong>（基于 <code>NSURLSession</code> 对象）</p>
@@ -478,6 +479,12 @@
 
 
 
+<p><strong>关于断点续传下载</strong></p>
+<p>设计思路是用请求的Range</p>
+<p>iOS断点续传：<a href="https://cloud.tencent.com/developer/article/1423899" target="_blank" rel="noopener">https://cloud.tencent.com/developer/article/1423899</a></p>
+<p>AFNetworking 实现断点续传：<a href="http://www.yangjie.hu/2018/05/15/breakpoint-resume-in-iOS/" target="_blank" rel="noopener">http://www.yangjie.hu/2018/05/15/breakpoint-resume-in-iOS/</a></p>
+<h3 id="六、补充"><a href="#六、补充" class="headerlink" title="六、补充"></a>六、补充</h3><p>iOS 利用AFNetworking实现大文件分片上传</p>
+<p><a href="https://www.jianshu.com/p/7919c620967e" target="_blank" rel="noopener">https://www.jianshu.com/p/7919c620967e</a></p>
 <h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>NSURLSession：<a href="https://www.jianshu.com/p/e798c6fe26ea" target="_blank" rel="noopener">https://www.jianshu.com/p/e798c6fe26ea</a></p>
 <p>iOS 网络(1)——NSURLSession: <a href="http://chuquan.me/2019/07/21/ios-network-nsurlsession/" target="_blank" rel="noopener">http://chuquan.me/2019/07/21/ios-network-nsurlsession/</a></p>
 <p>iOS NSURLSession 详解：<a href="https://juejin.im/entry/58aacabcac502e006973ce03" target="_blank" rel="noopener">https://juejin.im/entry/58aacabcac502e006973ce03</a></p>
@@ -643,7 +650,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#一、概述"><span class="nav-number">1.</span> <span class="nav-text">一、概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二、NSURLSession的使用"><span class="nav-number">2.</span> <span class="nav-text">二、NSURLSession的使用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#创建NSURLSession对象"><span class="nav-number">2.1.</span> <span class="nav-text">创建NSURLSession对象</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#使用NSURLSession对象创建Task"><span class="nav-number">2.2.</span> <span class="nav-text">使用NSURLSession对象创建Task</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#启动任务"><span class="nav-number">2.3.</span> <span class="nav-text">启动任务</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#三、GET请求与POST请求"><span class="nav-number">3.</span> <span class="nav-text">三、GET请求与POST请求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#四、文件的上传"><span class="nav-number">4.</span> <span class="nav-text">四、文件的上传</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#五、文件的下载"><span class="nav-number">5.</span> <span class="nav-text">五、文件的下载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#参考链接"><span class="nav-number">6.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#一、概述"><span class="nav-number">1.</span> <span class="nav-text">一、概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#二、NSURLSession的使用"><span class="nav-number">2.</span> <span class="nav-text">二、NSURLSession的使用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#创建NSURLSession对象"><span class="nav-number">2.1.</span> <span class="nav-text">创建NSURLSession对象</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#使用NSURLSession对象创建Task"><span class="nav-number">2.2.</span> <span class="nav-text">使用NSURLSession对象创建Task</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#启动任务"><span class="nav-number">2.3.</span> <span class="nav-text">启动任务</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#三、GET请求与POST请求"><span class="nav-number">3.</span> <span class="nav-text">三、GET请求与POST请求</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#四、文件的上传"><span class="nav-number">4.</span> <span class="nav-text">四、文件的上传</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#五、文件的下载"><span class="nav-number">5.</span> <span class="nav-text">五、文件的下载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#六、补充"><span class="nav-number">6.</span> <span class="nav-text">六、补充</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#参考链接"><span class="nav-number">7.</span> <span class="nav-text">参考链接</span></a></li></ol></div>
             
 
           </div>
