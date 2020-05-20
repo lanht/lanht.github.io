@@ -244,7 +244,11 @@ NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHand
 - (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;
 ```
 
+**关于分片上传和断点续传上传**
 
+可以参考阿里云AliyunOSSiOS源码及文档
+
+文档地址：https://help.aliyun.com/document_detail/31850.html?spm=a2c4g.11186623.6.610.62d72201Fvv00V
 
 ### 五、文件的下载
 
@@ -276,6 +280,22 @@ NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHand
 
 - (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;
 ```
+
+
+
+**关于断点续传下载**
+
+设计思路是用请求的Range
+
+iOS断点续传：https://cloud.tencent.com/developer/article/1423899
+
+AFNetworking 实现断点续传：http://www.yangjie.hu/2018/05/15/breakpoint-resume-in-iOS/
+
+### 六、补充
+
+iOS 利用AFNetworking实现大文件分片上传
+
+https://www.jianshu.com/p/7919c620967e
 
 
 
