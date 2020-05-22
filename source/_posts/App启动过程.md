@@ -10,7 +10,13 @@ categories:
 
 热启动
 
-.o 文件 MACH-O文件
+.o 文件
+
+ MACH-O格式
+
+dyld
+
+符号
 
 dsym文件分析？
 
