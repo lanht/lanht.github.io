@@ -1,105 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>App启动过程</title>
-    <url>/2020/05/12/App%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/</url>
-    <content><![CDATA[<p>冷启动</p>
-<p>热启动</p>
-<p>.o 文件</p>
-<p> MACH-O格式</p>
-<p>dyld</p>
-<p>符号</p>
-<p>dsym文件分析？</p>
-<p>编程思想</p>
-<p>设计模式</p>
-<p>UML图</p>
-]]></content>
-      <categories>
-        <category>iOS</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>CoreData使用分析</title>
-    <url>/2020/05/12/CoreData%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/</url>
-    <content><![CDATA[<h3 id="一、基本介绍"><a href="#一、基本介绍" class="headerlink" title="一、基本介绍"></a>一、基本介绍</h3><ul>
-<li><p>什么是CoreData<br>CoreData是Apple官方为iOS提供的一个数据持久化方案，其本质是一个通过封装底层数据操作，让程序员以面向对象的方式存储和管理数据的ORM框架（Object-Relational Mapping：对象-关系映射，简称ORM）。虽然底层支持SQLite、二进制数据、xml等多种文件存储，但是主要还是用来操作SQLite数据库。<br>程序员不需要学习或者使用SQL语句，只需要使用CoreData框架提供的对象和接口以及图形化工具，即可完成SQLite数据库的创建、表关系、增删改查等一系列操作，在一定程度上降低了程序员的学习成本并增加了代码的统一性和可阅读性。</p>
-</li>
-<li><p>CoreData主要包含以下几个类<br>– <strong>NSManagedObjectModel</strong>：托管对象模型，映射实体类和数据库数据的关系，本质是一个XML文件，后面简称MOM<br>– <strong>NSManagedObject</strong>：托管对象，对应数据库数据的实体，后面简称MO<br>– <strong>NSManagedObjectContext</strong>：托管对象上下文，管理托管对象，后面简称MOC<br>– <strong>NSPersistentStoreCoordinator</strong>：持久化存储调度器，用来处理磁盘持久化数据和实体类对象的相互转化，后面简称PSC<br>– <strong>NSPersistentStore</strong>：持久化存储器，负责磁盘持久化数据存取，后面简称PS<br>– <strong>NSEntityDescription</strong>：用来描述实体<br>– <strong>NSFetchRequest</strong>：操作请求</p>
-</li>
-<li><p>CoreData的总体框架如下图<br><img src="images/db/db1.jpg" alt=""><br>在上层通过MOC操作对应的托管对象，然后MOC会将操作传递给PSC，PSC通过托管对象模型中的映射关系，再将托管对象的操作转化为对底层数据的操作，进行数据存取操作。</p>
-</li>
-</ul>
-<h3 id="二、简单创建流程"><a href="#二、简单创建流程" class="headerlink" title="二、简单创建流程"></a>二、简单创建流程</h3><ol>
-<li><p>模型文件操作<br>1.1 创建模型文件，后缀为<code>.xcdatamodeld</code>。创建模型文件之后，可以在内部进行添加实体等操作（用于表示数据库文件的数据结构）。<br>1.2 添加实体（表示数据库文件的表结构），添加实体后需要通过实体来创建托管对象类文件。<br>1.3 天剑属性并设置类型，可以在属性的右侧面板中设置默认值等选项。（每种数据类型设置的选项是不同的）。<br>1.4 创建请求模板，设置配置模板等。<br>1.5 根据指定实体，创建托管对象类文件（基于<code>NSManagedObject</code>）.  </p>
-</li>
-<li><p>实例化上下文对象<br>2.1 创建托管上下文（<code>NSManagedObjectContext</code>）。<br>2.2 创建托管对象模型（<code>NSManagedObjectModel</code>）。<br>2.3 根据托管对象模型，创建持久化存储协调器（<code>NSPersistentStoreCoordinator</code>）。<br>2.4 关联并创建本地数据库文件，并返回持久化存储持对象（<code>NSPersistentStore</code>）。<br>2.5 将持久化存储协调器赋值给托管对象上下文，完成基本创建。</p>
-</li>
-<li><p>示例<br>下面是根据Company模型文件，创建了一个主队列并发类型的MOC  </p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建上下文对象，并发队列设置为主队列</span></span><br><span class="line"><span class="built_in">NSManagedObjectContext</span> *context = [[<span class="built_in">NSManagedObjectContext</span> alloc] initWithConcurrencyType:<span class="built_in">NSMainQueueConcurrencyType</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建托管对象模型，并使用Company.momd路径当做初始化参数</span></span><br><span class="line"><span class="built_in">NSURL</span> *modelPath = [[<span class="built_in">NSBundle</span> mainBundle] URLForResource:<span class="string">@"Company"</span> withExtension:<span class="string">@"momd"</span>];</span><br><span class="line"><span class="built_in">NSManagedObjectModel</span> *model = [[<span class="built_in">NSManagedObjectModel</span> alloc] initWithContentsOfURL:modelPath];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建持久化存储调度器</span></span><br><span class="line"><span class="built_in">NSPersistentStoreCoordinator</span> *coordinator = [[<span class="built_in">NSPersistentStoreCoordinator</span> alloc] initWithManagedObjectModel:model];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建并关联SQLite数据库文件，如果已经存在则不会重复创建</span></span><br><span class="line"><span class="built_in">NSString</span> *dataPath = <span class="built_in">NSSearchPathForDirectoriesInDomains</span>(<span class="built_in">NSDocumentDirectory</span>, <span class="built_in">NSUserDomainMask</span>, <span class="literal">YES</span>).lastObject;</span><br><span class="line">dataPath = [dataPath stringByAppendingFormat:<span class="string">@"/%@.sqlite"</span>, <span class="string">@"Company"</span>];</span><br><span class="line">[coordinator addPersistentStoreWithType:<span class="built_in">NSSQLiteStoreType</span> configuration:<span class="literal">nil</span> URL:[<span class="built_in">NSURL</span> fileURLWithPath:dataPath] options:<span class="literal">nil</span> error:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 上下文对象设置属性为持久化存储器</span></span><br><span class="line">context.persistentStoreCoordinator = coordinator;</span><br></pre></td></tr></table></figure>
-
-</li>
-</ol>
-<h3 id="三、基本操作"><a href="#三、基本操作" class="headerlink" title="三、基本操作"></a>三、基本操作</h3><ol>
-<li><p>插入操作</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建托管对象，并指明创建的托管对象所属实体名</span></span><br><span class="line">Employee *emp = [<span class="built_in">NSEntityDescription</span> insertNewObjectForEntityForName:<span class="string">@"Employee"</span> inManagedObjectContext:context];</span><br><span class="line">emp.name = <span class="string">@"lxz"</span>;</span><br><span class="line">emp.height = @<span class="number">1.7</span>;</span><br><span class="line">emp.brithday = [<span class="built_in">NSDate</span> date];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 通过上下文保存对象，并在保存前判断是否有更改</span></span><br><span class="line"><span class="built_in">NSError</span> *error = <span class="literal">nil</span>;</span><br><span class="line"><span class="keyword">if</span> (context.hasChanges) &#123;</span><br><span class="line">    [context save:&amp;error];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 错误处理</span></span><br><span class="line"><span class="keyword">if</span> (error) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"CoreData Insert Data Error : %@"</span>, error);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>删除操作</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 建立获取数据的请求对象，指明对Employee实体进行删除操作</span></span><br><span class="line"><span class="built_in">NSFetchRequest</span> *request = [<span class="built_in">NSFetchRequest</span> fetchRequestWithEntityName:<span class="string">@"Employee"</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建谓词对象，过滤出符合要求的对象，也就是要删除的对象</span></span><br><span class="line"><span class="built_in">NSPredicate</span> *predicate = [<span class="built_in">NSPredicate</span> predicateWithFormat:<span class="string">@"name = %@"</span>, <span class="string">@"lxz"</span>];</span><br><span class="line">request.predicate = predicate;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 执行获取操作，找到要删除的对象</span></span><br><span class="line"><span class="built_in">NSError</span> *error = <span class="literal">nil</span>;</span><br><span class="line"><span class="built_in">NSArray</span>&lt;Employee *&gt; *employees = [context executeFetchRequest:request error:&amp;error];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 遍历符合删除要求的对象数组，执行删除操作</span></span><br><span class="line">[employees enumerateObjectsUsingBlock:^(Employee * _Nonnull obj, <span class="built_in">NSUInteger</span> idx, <span class="built_in">BOOL</span> * _Nonnull stop) &#123;</span><br><span class="line">    [context deleteObject:obj];</span><br><span class="line">&#125;];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 保存上下文</span></span><br><span class="line"><span class="keyword">if</span> (context.hasChanges) &#123;</span><br><span class="line">    [context save:<span class="literal">nil</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 错误处理</span></span><br><span class="line"><span class="keyword">if</span> (error) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"CoreData Delete Data Error : %@"</span>, error);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>修改操作</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 建立获取数据的请求对象，并指明操作的实体为Employee</span></span><br><span class="line"><span class="built_in">NSFetchRequest</span> *request = [<span class="built_in">NSFetchRequest</span> fetchRequestWithEntityName:<span class="string">@"Employee"</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建谓词对象，设置过滤条件</span></span><br><span class="line"><span class="built_in">NSPredicate</span> *predicate = [<span class="built_in">NSPredicate</span> predicateWithFormat:<span class="string">@"name = %@"</span>, <span class="string">@"lxz"</span>];</span><br><span class="line">request.predicate = predicate;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 执行获取请求，获取到符合要求的托管对象</span></span><br><span class="line"><span class="built_in">NSError</span> *error = <span class="literal">nil</span>;</span><br><span class="line"><span class="built_in">NSArray</span>&lt;Employee *&gt; *employees = [context executeFetchRequest:request error:&amp;error];</span><br><span class="line">[employees enumerateObjectsUsingBlock:^(Employee * _Nonnull obj, <span class="built_in">NSUInteger</span> idx, <span class="built_in">BOOL</span> * _Nonnull stop) &#123;</span><br><span class="line">    obj.height = @<span class="number">3.</span>f;</span><br><span class="line">&#125;];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 将上面的修改进行存储</span></span><br><span class="line"><span class="keyword">if</span> (context.hasChanges) &#123;</span><br><span class="line">    [context save:<span class="literal">nil</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 错误处理</span></span><br><span class="line"><span class="keyword">if</span> (error) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"CoreData Update Data Error : %@"</span>, error);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>查找操作</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 建立获取数据的请求对象，指明操作的实体为Employee</span></span><br><span class="line"><span class="built_in">NSFetchRequest</span> *request = [<span class="built_in">NSFetchRequest</span> fetchRequestWithEntityName:<span class="string">@"Employee"</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 执行获取操作，获取所有Employee托管对象</span></span><br><span class="line"><span class="built_in">NSError</span> *error = <span class="literal">nil</span>;</span><br><span class="line"><span class="built_in">NSArray</span>&lt;Employee *&gt; *employees = [context executeFetchRequest:request error:&amp;error];</span><br><span class="line">[employees enumerateObjectsUsingBlock:^(Employee * _Nonnull obj, <span class="built_in">NSUInteger</span> idx, <span class="built_in">BOOL</span> * _Nonnull stop) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"Employee Name : %@, Height : %@, Brithday : %@"</span>, obj.name, obj.height, obj.brithday);</span><br><span class="line">&#125;];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 错误处理</span></span><br><span class="line"><span class="keyword">if</span> (error) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"CoreData Ergodic Data Error : %@"</span>, error);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>查找操作最简单粗暴，因为是演示代码，所以直接将所有Employee表中的托管对象加载出来。在实际开发中肯定不会这样做，只需要加载需要的数据。后面还会讲到一些更高级的操作，会涉及到获取方面的东西。</p>
-</li>
-</ol>
-<h3 id="四、版本迁移"><a href="#四、版本迁移" class="headerlink" title="四、版本迁移"></a>四、版本迁移</h3><p>几种版本迁移方案，在迁移之前都需要对原有的模型文件创建新的版本</p>
-<p><strong>选中需要做迁移的模型文件 -&gt; 点击菜单栏Editor -&gt; Add Model Versioon -&gt; 选择基于哪个版本的的模型文件（一般都是选择目前最新的版本），新建模型文件完成。</strong></p>
-<p>对于新版本的模型文件的命名，一般会拿当前工程版本号当后缀，这样在模型文件比较多时，可以很容易将模型文件版本和工程版本对应起来。</p>
-<ol>
-<li><p>轻量级迁移 （修改了model文件，不过不做迁移，在使用数据操作就会闪退，除非删掉沙盒里的sqlite）</p>
-</li>
-<li><p>Mapping Model迁移方案</p>
-</li>
-<li><p>渐进式迁移</p>
-</li>
-<li><p>更复杂的迁移需求</p>
-</li>
-</ol>
-<h3 id="五、多线程"><a href="#五、多线程" class="headerlink" title="五、多线程"></a>五、多线程</h3><p>在业务比较复杂的情况下，需要进行大量数据处理，并且还需要涉及到UI的操作。对于这种复杂需求，如果都放在主队列中，对性能和界面流畅度都会有很大的影响，导致用户体验非常差，降低屏幕FPS。对于这种情况，可以采取多个MOC配合的方式。</p>
-<p><strong>Core Data多线程操作的基本原则</strong><br>不允许跨线程访问MOC： 在某一个MOC上的CRUD操作只能在它的操作线程上进行<br>不允许跨线程访问MO：对MO的操作只能在它所属的MOC的操作线程上进行。需要注意的是，访问一个FRC的fetchedObjects数组也只能在FRC所属的MOC的操作线程上进行</p>
-<p><strong>iOS5之前使用多个MOC</strong></p>
-<p>在iOS5之前实现MOC的多线程，可以创建多个MOC，多个MOC使用同一个PSC，并让多个MOC实现数据同步。通过这种方式不用担心PSC在调用过程中的线程问题，MOC在使用PSC进行save操作时，会对PSC进行加锁，等当前加锁的MOC执行完操作之后，其他MOC才能继续执行操作。</p>
-<p>每一个PSC都对应着一个持久化存储区，PSC知道存储区中数据存储的数据结构，而MOC需要使用这个PSC进行save操作的实现。<br>这样做有一个问题，当一个MOC发生改变并持久化到本地时，系统并不会将其他MOC缓存在内存中的NSManagedObject对象改变。所以这就需要我们在MOC发生改变时，将其他MOC数据更新。</p>
-<p>根据上面的解释，在下面例子中创建了一个主队列的mainMOC，主要用于UI操作。一个私有队列的backgroundMOC，用于除UI之外的耗时操作，两个MOC使用的同一个PSC。</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 获取PSC实例对象</span></span><br><span class="line">- (<span class="built_in">NSPersistentStoreCoordinator</span> *)persistentStoreCoordinator &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建托管对象模型，并指明加载Company模型文件</span></span><br><span class="line">    <span class="built_in">NSURL</span> *modelPath = [[<span class="built_in">NSBundle</span> mainBundle] URLForResource:<span class="string">@"Company"</span> withExtension:<span class="string">@"momd"</span>];</span><br><span class="line">    <span class="built_in">NSManagedObjectModel</span> *model = [[<span class="built_in">NSManagedObjectModel</span> alloc] initWithContentsOfURL:modelPath];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建PSC对象，并将托管对象模型当做参数传入，其他MOC都是用这一个PSC。</span></span><br><span class="line">    <span class="built_in">NSPersistentStoreCoordinator</span> *PSC = [[<span class="built_in">NSPersistentStoreCoordinator</span> alloc] initWithManagedObjectModel:model];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 根据指定的路径，创建并关联本地数据库</span></span><br><span class="line">    <span class="built_in">NSString</span> *dataPath = <span class="built_in">NSSearchPathForDirectoriesInDomains</span>(<span class="built_in">NSDocumentDirectory</span>, <span class="built_in">NSUserDomainMask</span>, <span class="literal">YES</span>).lastObject;</span><br><span class="line">    dataPath = [dataPath stringByAppendingFormat:<span class="string">@"/%@.sqlite"</span>, <span class="string">@"Company"</span>];</span><br><span class="line">    [PSC addPersistentStoreWithType:<span class="built_in">NSSQLiteStoreType</span> configuration:<span class="literal">nil</span> URL:[<span class="built_in">NSURL</span> fileURLWithPath:dataPath] options:<span class="literal">nil</span> error:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> PSC;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 初始化用于本地存储的所有MOC</span></span><br><span class="line">- (<span class="keyword">void</span>)createManagedObjectContext &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建PSC实例对象，其他MOC都用这一个PSC。</span></span><br><span class="line">    <span class="built_in">NSPersistentStoreCoordinator</span> *PSC = <span class="keyword">self</span>.persistentStoreCoordinator;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建主队列MOC，用于执行UI操作</span></span><br><span class="line">    <span class="built_in">NSManagedObjectContext</span> *mainMOC = [[<span class="built_in">NSManagedObjectContext</span> alloc] initWithConcurrencyType:<span class="built_in">NSMainQueueConcurrencyType</span>];</span><br><span class="line">    mainMOC.persistentStoreCoordinator = PSC;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建私有队列MOC，用于执行其他耗时操作</span></span><br><span class="line">    <span class="built_in">NSManagedObjectContext</span> *backgroundMOC = [[<span class="built_in">NSManagedObjectContext</span> alloc] initWithConcurrencyType:<span class="built_in">NSPrivateQueueConcurrencyType</span>];</span><br><span class="line">    backgroundMOC.persistentStoreCoordinator = PSC;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通过监听NSManagedObjectContextDidSaveNotification通知，来获取所有MOC的改变消息</span></span><br><span class="line">    [[<span class="built_in">NSNotificationCenter</span> defaultCenter] addObserver:<span class="keyword">self</span> selector:<span class="keyword">@selector</span>(contextChanged:) name:<span class="built_in">NSManagedObjectContextDidSaveNotification</span> object:<span class="literal">nil</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// MOC改变后的通知回调</span></span><br><span class="line">- (<span class="keyword">void</span>)contextChanged:(<span class="built_in">NSNotification</span> *)noti &#123;</span><br><span class="line">    <span class="built_in">NSManagedObjectContext</span> *MOC = noti.object;</span><br><span class="line">    <span class="comment">// 这里需要做判断操作，判断当前改变的MOC是否我们将要做同步的MOC，如果就是当前MOC自己做的改变，那就不需要再同步自己了。</span></span><br><span class="line">    <span class="comment">// 由于项目中可能存在多个PSC，所以下面还需要判断PSC是否当前操作的PSC，如果不是当前PSC则不需要同步，不要去同步其他本地存储的数据。</span></span><br><span class="line">    [MOC performBlock:^&#123;</span><br><span class="line">        <span class="comment">// 直接调用系统提供的同步API，系统内部会完成同步的实现细节。</span></span><br><span class="line">        [MOC mergeChangesFromContextDidSaveNotification:noti];</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>在上面的Demo中，创建了一个PSC，并将其他MOC都关联到这个PSC上，这样所有的MOC执行本地持久化相关的操作时，都是通过同一个PSC进行操作的。并在下面添加了一个通知，这个通知是监听所有MOC执行save操作后的通知，并在通知的回调方法中进行数据的合并。</p>
-<p><strong>iOS5之后使用多个MOC</strong></p>
-<p>在iOS5之后，MOC可以设置parentContext，一个parentContext可以拥有多个ChildContext。在ChildContext执行save操作后，会将操作push到parentContext，由parentContext去完成真正的save操作，而ChildContext所有的改变都会被parentContext所知晓，这解决了之前MOC手动同步数据的问题。</p>
-<p>需要注意的是，在ChildContext调用save方法之后，此时并没有将数据写入存储区，还需要调用parentContext的save方法。因为ChildContext并不拥有PSC，ChildContext也不需要设置PSC，所以需要parentContext调用PSC来执行真正的save操作。也就是只有拥有PSC的MOC执行save操作后，才是真正的执行了写入存储区的操作。</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)createManagedObjectContext &#123;</span><br><span class="line">    <span class="comment">// 创建PSC实例对象，还是用上面Demo的实例化代码</span></span><br><span class="line">    <span class="built_in">NSPersistentStoreCoordinator</span> *PSC = <span class="keyword">self</span>.persistentStoreCoordinator;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建主队列MOC，用于执行UI操作</span></span><br><span class="line">    <span class="built_in">NSManagedObjectContext</span> *mainMOC = [[<span class="built_in">NSManagedObjectContext</span> alloc] initWithConcurrencyType:<span class="built_in">NSMainQueueConcurrencyType</span>];</span><br><span class="line">    mainMOC.persistentStoreCoordinator = PSC;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建私有队列MOC，用于执行其他耗时操作，backgroundMOC并不需要设置PSC</span></span><br><span class="line">    <span class="built_in">NSManagedObjectContext</span> *backgroundMOC = [[<span class="built_in">NSManagedObjectContext</span> alloc] initWithConcurrencyType:<span class="built_in">NSPrivateQueueConcurrencyType</span>];</span><br><span class="line">    backgroundMOC.parentContext = mainMOC;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 私有队列的MOC和主队列的MOC，在执行save操作时，都应该调用performBlock:方法，在自己的队列中执行save操作。</span></span><br><span class="line">    <span class="comment">// 私有队列的MOC执行完自己的save操作后，还调用了主队列MOC的save方法，来完成真正的持久化操作，否则不能持久化到本地</span></span><br><span class="line">    [backgroundMOC performBlock:^&#123;</span><br><span class="line">        [backgroundMOC save:<span class="literal">nil</span>];</span><br><span class="line">    </span><br><span class="line">        [mainMOC performBlock:^&#123;</span><br><span class="line">            [mainMOC save:<span class="literal">nil</span>];</span><br><span class="line">        &#125;];</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>上面例子中创建一个主队列的mainMOC，来完成UI相关的操作。创建私有队列的backgroundMOC，处理复杂逻辑以及数据处理操作，在实际开发中可以根据需求创建多个backgroundMOC。需要注意的是，在backgroundMOC执行完save方法后，又在mainMOC中执行了一次save方法，这步是很重要的。</p>
-<h3 id="多个MOC面临的多线程问题"><a href="#多个MOC面临的多线程问题" class="headerlink" title="多个MOC面临的多线程问题"></a>多个MOC面临的多线程问题</h3><p><strong>1.线程安全</strong><br>无论是MOC还是托管对象，都不应该在其他MOC的线程中执行操作，这两个API都不是线程安全的。但MOC可以在其他MOC线程中调用performBlock:方法，切换到自己的线程执行操作。</p>
-<p>如果其他MOC想要拿到托管对象，并在自己的队列中使用托管对象，这是不允许的，托管对象是不能直接传递到其他MOC的线程的。但是可以通过获取NSManagedObject的NSManagedObjectID对象，在其他MOC中通过NSManagedObjectID对象，从持久化存储区中获取NSManagedObject对象，这样就是允许的。NSManagedObjectID是线程安全，并且可以跨线程使用的。</p>
-<p>可以通过MOC获取NSManagedObjectID对应的NSManagedObject对象，例如下面几个MOC的API。</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="built_in">NSManagedObject</span> *object = [context objectRegisteredForID:objectID];</span><br><span class="line"><span class="built_in">NSManagedObject</span> *object = [context objectWithID:objectID];</span><br></pre></td></tr></table></figure>
-
-<p>通过NSManagedObject对象的objectID属性，获取NSManagedObjectID类型的objectID对象。</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="built_in">NSManagedObjectID</span> *objectID = object.objectID;</span><br></pre></td></tr></table></figure>
-
-<p><strong>2.MOC同步时机</strong><br>设置MOC的parentContext属性之后，parent对于child的改变是知道的，但是child对于parent的改变是不知道的。苹果这样设计，应该是为了更好的数据同步。</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">Employee *emp = [<span class="built_in">NSEntityDescription</span> insertNewObjectForEntityForName:<span class="string">@"Employee"</span> inManagedObjectContext:backgroundMOC];</span><br><span class="line">emp.name = <span class="string">@"lxz"</span>;</span><br><span class="line">emp.brithday = [<span class="built_in">NSDate</span> date];</span><br><span class="line">emp.height = @<span class="number">1.7</span>f;</span><br><span class="line"></span><br><span class="line">[backgroundMOC performBlock:^&#123;</span><br><span class="line">    [backgroundMOC save:<span class="literal">nil</span>];</span><br><span class="line">    [mainMOC performBlock:^&#123;</span><br><span class="line">        [mainMOC save:<span class="literal">nil</span>];</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
-<p>在上面这段代码中，mainMOC是backgroundMOC的parentContext。在backgroundMOC执行save方法前，backgroundMOC和mainMOC都不能获取到Employee的数据，在backgroundMOC执行完save方法后，自身上下文发生改变的同时，也将改变push到mainMOC中，mainMOC也具有了Employee对象。</p>
-<p>所以在backgroundMOC的save方法执行时，是对内存中的上下文做了改变，当拥有PSC的mainMOC执行save方法后，是对本地存储区做了改变。</p>
-<h3 id="参看链接"><a href="#参看链接" class="headerlink" title="参看链接"></a>参看链接</h3><p>Core Data 概述:(相关CoreData系列文章)<a href="https://objccn.io/issue-4-1/" target="_blank" rel="noopener">https://objccn.io/issue-4-1/</a><br>认识CoreData - 初识CoreData(写了CoreData系列文章，都可以看看)：<a href="https://www.jianshu.com/p/c0e12a897971" target="_blank" rel="noopener">https://www.jianshu.com/p/c0e12a897971</a></p>
-<p>Core Data三层设计方案：<a href="https://github.com/ChenYongJunM/CoreDataMultithread" target="_blank" rel="noopener">https://github.com/ChenYongJunM/CoreDataMultithread</a></p>
-]]></content>
-      <categories>
-        <category>iOS</category>
-      </categories>
-  </entry>
-  <entry>
     <title>AFNetworking使用分析</title>
     <url>/2020/05/12/AFNetworking%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/</url>
     <content><![CDATA[<p>基于3.x进行使用分析</p>
@@ -277,6 +178,168 @@
       </categories>
   </entry>
   <entry>
+    <title>App启动过程</title>
+    <url>/2020/05/12/App%E5%90%AF%E5%8A%A8%E8%BF%87%E7%A8%8B/</url>
+    <content><![CDATA[<h4 id="一、“冷启动”与“热启动”"><a href="#一、“冷启动”与“热启动”" class="headerlink" title="一、“冷启动”与“热启动”"></a>一、“冷启动”与“热启动”</h4><p>首先，我们先来区分两个启动的概念。</p>
+<ul>
+<li>冷启动：<br> <code>App</code>点击启动前，此时<code>App</code>的进程还不在系统里。<br> 需要系统新创建一个进程分配给<code>App</code>。（这是一次完整的<code>App</code>启动过程）</li>
+<li>热启动：<br> <code>App</code>在冷启动后用户将<code>App</code>退回后台，此时<code>App</code>的进程还在系统里。<br> 用户重新返回<code>App</code>的过程。（热启动做的事较少）</li>
+</ul>
+<p>主要区别：</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>区别</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>冷启动</td>
+<td>启动时，App的进程<strong>不在</strong>系统里，<strong>需要</strong>开启新进程。</td>
+</tr>
+<tr>
+<td>热启动</td>
+<td>启动时，App的进程<strong>还在</strong>系统里，<strong>不需要</strong>开启新进程。</td>
+</tr>
+</tbody></table>
+<h4 id="二、App的完整启动流程（冷启动流程）"><a href="#二、App的完整启动流程（冷启动流程）" class="headerlink" title="二、App的完整启动流程（冷启动流程）"></a>二、App的完整启动流程（冷启动流程）</h4><p>主要分为三个阶段：</p>
+<ol>
+<li><strong><code>main()</code> 函数执行前（pre-main阶段）</strong></li>
+<li><strong><code>main()</code> 函数执行后（从<code>main</code>函数执行，到设置<code>self.window.rootViewController</code>执行完成）</strong></li>
+<li><strong>首屏渲染完成后（从<code>self.window.rootViewController</code>执行完成到<code>didFinishLaunchWithOptions</code>方法作用域结束）</strong></li>
+</ol>
+<hr>
+<h5 id="（1）main函数执行前，系统会做的事："><a href="#（1）main函数执行前，系统会做的事：" class="headerlink" title="（1）main函数执行前，系统会做的事："></a>（1）main函数执行前，系统会做的事：</h5><ul>
+<li>加载可执行文件。（<code>App</code>里的所有<code>.o</code>文件）</li>
+<li>加载动态链接库，进行<code>rebase</code>指针调整和<code>bind</code>符号绑定。</li>
+<li><code>ObjC</code>的<code>runtime</code>初始化。 包括：<code>ObjC</code>相关<code>Class</code>的注册、<code>category</code>注册、<code>selector</code>唯一性检查等。</li>
+<li>初始化。 包括：执行<code>+load()</code>方法、用<code>attribute((constructor))</code>修饰的函数的调用、创建<code>C++</code>静态全局变量等。</li>
+</ul>
+<p><img src="1.jpg" alt=""></p>
+<blockquote>
+<p>简单来说，<br> App启动后，首先，系统内核（<a href="https://baike.so.com/doc/6792525-7009150.html" target="_blank" rel="noopener">Kernel</a>）创建一个进程。<br> 其次，加载可执行文件。（可执行文件是指<a href="http://www.cocoachina.com/articles/10988" target="_blank" rel="noopener">Mach-O</a>格式的文件，也就是App中所有.o文件的集合体）这时，能获取到dyld（dyld是苹果的动态链接器）的路径。<br> 然后，加载dyld，主要分为4步：<br> 1 . <strong>load dylibs</strong>：这一阶段dyld会分析应用依赖的<code>dylib</code>，找到其<code>mach-o</code>文件，打开和读取这些文件并验证其有效性，接着会找到代码签名注册到内核，最后对<code>dylib</code>的每一个<code>segment</code>调用<a href="https://baike.so.com/doc/6784320-7000923.html" target="_blank" rel="noopener">mmap()</a>。<br> 2 . <strong>rebase/bind</strong>：进行<code>rebase</code>指针调整和<code>bind</code>符号绑定。<br> 3 . <strong>ObjC setup</strong>：runtime运行时初始化。包括<code>ObjC</code>相关<code>Class</code>的注册、<code>category</code>注册、<code>selector</code>唯一性检查等。<br> 4 . <strong>Initializers</strong>：调用每个<code>ObjC</code>类与分类的<code>+load</code>方法，调用<code>attribute((constructor))</code>修饰的函数、创建<code>C++</code>静态全局变量。</p>
+</blockquote>
+<hr>
+<h5 id="（2）main函数执行后："><a href="#（2）main函数执行后：" class="headerlink" title="（2）main函数执行后："></a>（2）main函数执行后：</h5><p>main函数执行后的阶段，指的是：从 <code>main</code> 函数执行开始，到 <code>appDelegate</code> 的 <code>didFinishLaunchingWithOptions</code>方法里首屏渲染相关方法执行完成。 即，从<code>main</code>函数执行到设置<code>self.window.rootViewController</code>执行完成的阶段。</p>
+<ul>
+<li>首屏初始化所需配置文件的读写操作；</li>
+<li>首屏列表大数据的读取；</li>
+<li>首屏渲染的大量计算；</li>
+</ul>
+<p><img src="2.jpg" alt=""></p>
+<h5 id="（3）首屏渲染完成后："><a href="#（3）首屏渲染完成后：" class="headerlink" title="（3）首屏渲染完成后："></a>（3）首屏渲染完成后：</h5><p>首屏渲染完成后的阶段，指的是：<code>didFinishLaunchingWithOptions</code>方法作用域 内执行首屏渲染后的所有方法执行。 即从设置<code>self.window.rootViewController</code>到<code>didFinishLaunchWithOptions</code>方法作用域结束。</p>
+<p>这个阶段，首屏已经渲染完成。</p>
+<p>需要做的事：</p>
+<ul>
+<li>初始化一些首屏展示不需要的功能。</li>
+<li>优化主线程，先处理会卡住主线程的方法，不能影响到用户的后续操作。</li>
+</ul>
+<hr>
+<h4 id="三、具体优化思路"><a href="#三、具体优化思路" class="headerlink" title="三、具体优化思路"></a>三、具体优化思路</h4><p>用户能感知到的启动时长主要是在 <strong>“main函数执行前”</strong> 、<strong>“main函数执行后到首屏渲染完成”</strong>的阶段。</p>
+<blockquote>
+<p>main函数执行前，优化思路如下：</p>
+</blockquote>
+<h6 id="（1）减少使用-load-方法"><a href="#（1）减少使用-load-方法" class="headerlink" title="（1）减少使用 +load() 方法"></a>（1）减少使用 <code>+load()</code> 方法</h6><ul>
+<li>方案一：如果可能的话，将<code>+load</code>中的内容，放到渲染完成后做。</li>
+<li>方案二：使用<code>+initialize()</code>的方法代替<code>+load()</code>，注意把逻辑移动到<code>+initialize()</code>时，要注意避免<code>+initialize()</code>的重复调用问题，可以使用<code>dispatch_once()</code>让逻辑只执行一次。</li>
+</ul>
+<blockquote>
+<p>小知识点：<code>+load()</code>与<code>+initialize()</code>两者的区别?<br> <strong><code>+load()</code>方法会在main()函数调用前就调用，而<code>+initialize()</code>是在类第一次使用时才会调用。</strong><br> <code>+load</code>方法的调用优先级: 父类 &gt; 子类 &gt; 分类，并且不会被覆盖，均会调用。<br> <code>+load</code>方法是在main() 函数之前调用，所有的类文件都会加载，包括分类也会加载。 <code>+initialize</code>方法的调用优先级：分类 &gt; 子类，父类 &gt; 子类。（父类的分类重写了<code>+initialize</code>方法会覆盖父类的<code>+initialize</code>方法）</p>
+</blockquote>
+<h6 id="（2）合并多个动态库"><a href="#（2）合并多个动态库" class="headerlink" title="（2）合并多个动态库"></a>（2）合并多个动态库</h6><p>苹果公司建议使用更少的动态库，并且建议在使用动态库的数量较多时，尽量将多个动态库进行合并。数量上，苹果公司最多可以支持<code>6</code>个非系统动态库合并为一个。</p>
+<h6 id="（3）优化类、方法、全局变量"><a href="#（3）优化类、方法、全局变量" class="headerlink" title="（3）优化类、方法、全局变量"></a>（3）优化类、方法、全局变量</h6><p>减少加载启动后不会去使用的类或方法；少用C++全局变量；</p>
+<blockquote>
+<p>main函数执行后，优化方案如下：</p>
+</blockquote>
+<h6 id="（4）优化首屏渲染前的功能初始化"><a href="#（4）优化首屏渲染前的功能初始化" class="headerlink" title="（4）优化首屏渲染前的功能初始化"></a>（4）优化首屏渲染前的功能初始化</h6><p>main函数执行后到首屏渲染完成前，只处理<strong>首屏渲染</strong>相关业务。 首屏渲染外的<strong>其他功能</strong>放到首屏渲染完成后去初始化。</p>
+<h6 id="（5）优化主线程耗时操作，防止屏幕卡顿。"><a href="#（5）优化主线程耗时操作，防止屏幕卡顿。" class="headerlink" title="（5）优化主线程耗时操作，防止屏幕卡顿。"></a>（5）优化主线程耗时操作，防止屏幕卡顿。</h6><p>首先检查首屏渲染前，主线程上的耗时操作。将耗时操作滞后或异步处理。 通常的耗时操作有：网络加载、编辑、存储图片和文件等资源。 针对耗时操作做相对应的优化即可。</p>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>CoreData使用分析</title>
+    <url>/2020/05/12/CoreData%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/</url>
+    <content><![CDATA[<h3 id="一、基本介绍"><a href="#一、基本介绍" class="headerlink" title="一、基本介绍"></a>一、基本介绍</h3><ul>
+<li><p>什么是CoreData<br>CoreData是Apple官方为iOS提供的一个数据持久化方案，其本质是一个通过封装底层数据操作，让程序员以面向对象的方式存储和管理数据的ORM框架（Object-Relational Mapping：对象-关系映射，简称ORM）。虽然底层支持SQLite、二进制数据、xml等多种文件存储，但是主要还是用来操作SQLite数据库。<br>程序员不需要学习或者使用SQL语句，只需要使用CoreData框架提供的对象和接口以及图形化工具，即可完成SQLite数据库的创建、表关系、增删改查等一系列操作，在一定程度上降低了程序员的学习成本并增加了代码的统一性和可阅读性。</p>
+</li>
+<li><p>CoreData主要包含以下几个类<br>– <strong>NSManagedObjectModel</strong>：托管对象模型，映射实体类和数据库数据的关系，本质是一个XML文件，后面简称MOM<br>– <strong>NSManagedObject</strong>：托管对象，对应数据库数据的实体，后面简称MO<br>– <strong>NSManagedObjectContext</strong>：托管对象上下文，管理托管对象，后面简称MOC<br>– <strong>NSPersistentStoreCoordinator</strong>：持久化存储调度器，用来处理磁盘持久化数据和实体类对象的相互转化，后面简称PSC<br>– <strong>NSPersistentStore</strong>：持久化存储器，负责磁盘持久化数据存取，后面简称PS<br>– <strong>NSEntityDescription</strong>：用来描述实体<br>– <strong>NSFetchRequest</strong>：操作请求</p>
+</li>
+<li><p>CoreData的总体框架如下图<br><img src="images/db/db1.jpg" alt=""><br>在上层通过MOC操作对应的托管对象，然后MOC会将操作传递给PSC，PSC通过托管对象模型中的映射关系，再将托管对象的操作转化为对底层数据的操作，进行数据存取操作。</p>
+</li>
+</ul>
+<h3 id="二、简单创建流程"><a href="#二、简单创建流程" class="headerlink" title="二、简单创建流程"></a>二、简单创建流程</h3><ol>
+<li><p>模型文件操作<br>1.1 创建模型文件，后缀为<code>.xcdatamodeld</code>。创建模型文件之后，可以在内部进行添加实体等操作（用于表示数据库文件的数据结构）。<br>1.2 添加实体（表示数据库文件的表结构），添加实体后需要通过实体来创建托管对象类文件。<br>1.3 天剑属性并设置类型，可以在属性的右侧面板中设置默认值等选项。（每种数据类型设置的选项是不同的）。<br>1.4 创建请求模板，设置配置模板等。<br>1.5 根据指定实体，创建托管对象类文件（基于<code>NSManagedObject</code>）.  </p>
+</li>
+<li><p>实例化上下文对象<br>2.1 创建托管上下文（<code>NSManagedObjectContext</code>）。<br>2.2 创建托管对象模型（<code>NSManagedObjectModel</code>）。<br>2.3 根据托管对象模型，创建持久化存储协调器（<code>NSPersistentStoreCoordinator</code>）。<br>2.4 关联并创建本地数据库文件，并返回持久化存储持对象（<code>NSPersistentStore</code>）。<br>2.5 将持久化存储协调器赋值给托管对象上下文，完成基本创建。</p>
+</li>
+<li><p>示例<br>下面是根据Company模型文件，创建了一个主队列并发类型的MOC  </p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建上下文对象，并发队列设置为主队列</span></span><br><span class="line"><span class="built_in">NSManagedObjectContext</span> *context = [[<span class="built_in">NSManagedObjectContext</span> alloc] initWithConcurrencyType:<span class="built_in">NSMainQueueConcurrencyType</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建托管对象模型，并使用Company.momd路径当做初始化参数</span></span><br><span class="line"><span class="built_in">NSURL</span> *modelPath = [[<span class="built_in">NSBundle</span> mainBundle] URLForResource:<span class="string">@"Company"</span> withExtension:<span class="string">@"momd"</span>];</span><br><span class="line"><span class="built_in">NSManagedObjectModel</span> *model = [[<span class="built_in">NSManagedObjectModel</span> alloc] initWithContentsOfURL:modelPath];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建持久化存储调度器</span></span><br><span class="line"><span class="built_in">NSPersistentStoreCoordinator</span> *coordinator = [[<span class="built_in">NSPersistentStoreCoordinator</span> alloc] initWithManagedObjectModel:model];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建并关联SQLite数据库文件，如果已经存在则不会重复创建</span></span><br><span class="line"><span class="built_in">NSString</span> *dataPath = <span class="built_in">NSSearchPathForDirectoriesInDomains</span>(<span class="built_in">NSDocumentDirectory</span>, <span class="built_in">NSUserDomainMask</span>, <span class="literal">YES</span>).lastObject;</span><br><span class="line">dataPath = [dataPath stringByAppendingFormat:<span class="string">@"/%@.sqlite"</span>, <span class="string">@"Company"</span>];</span><br><span class="line">[coordinator addPersistentStoreWithType:<span class="built_in">NSSQLiteStoreType</span> configuration:<span class="literal">nil</span> URL:[<span class="built_in">NSURL</span> fileURLWithPath:dataPath] options:<span class="literal">nil</span> error:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 上下文对象设置属性为持久化存储器</span></span><br><span class="line">context.persistentStoreCoordinator = coordinator;</span><br></pre></td></tr></table></figure>
+
+</li>
+</ol>
+<h3 id="三、基本操作"><a href="#三、基本操作" class="headerlink" title="三、基本操作"></a>三、基本操作</h3><ol>
+<li><p>插入操作</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建托管对象，并指明创建的托管对象所属实体名</span></span><br><span class="line">Employee *emp = [<span class="built_in">NSEntityDescription</span> insertNewObjectForEntityForName:<span class="string">@"Employee"</span> inManagedObjectContext:context];</span><br><span class="line">emp.name = <span class="string">@"lxz"</span>;</span><br><span class="line">emp.height = @<span class="number">1.7</span>;</span><br><span class="line">emp.brithday = [<span class="built_in">NSDate</span> date];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 通过上下文保存对象，并在保存前判断是否有更改</span></span><br><span class="line"><span class="built_in">NSError</span> *error = <span class="literal">nil</span>;</span><br><span class="line"><span class="keyword">if</span> (context.hasChanges) &#123;</span><br><span class="line">    [context save:&amp;error];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 错误处理</span></span><br><span class="line"><span class="keyword">if</span> (error) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"CoreData Insert Data Error : %@"</span>, error);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>删除操作</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 建立获取数据的请求对象，指明对Employee实体进行删除操作</span></span><br><span class="line"><span class="built_in">NSFetchRequest</span> *request = [<span class="built_in">NSFetchRequest</span> fetchRequestWithEntityName:<span class="string">@"Employee"</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建谓词对象，过滤出符合要求的对象，也就是要删除的对象</span></span><br><span class="line"><span class="built_in">NSPredicate</span> *predicate = [<span class="built_in">NSPredicate</span> predicateWithFormat:<span class="string">@"name = %@"</span>, <span class="string">@"lxz"</span>];</span><br><span class="line">request.predicate = predicate;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 执行获取操作，找到要删除的对象</span></span><br><span class="line"><span class="built_in">NSError</span> *error = <span class="literal">nil</span>;</span><br><span class="line"><span class="built_in">NSArray</span>&lt;Employee *&gt; *employees = [context executeFetchRequest:request error:&amp;error];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 遍历符合删除要求的对象数组，执行删除操作</span></span><br><span class="line">[employees enumerateObjectsUsingBlock:^(Employee * _Nonnull obj, <span class="built_in">NSUInteger</span> idx, <span class="built_in">BOOL</span> * _Nonnull stop) &#123;</span><br><span class="line">    [context deleteObject:obj];</span><br><span class="line">&#125;];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 保存上下文</span></span><br><span class="line"><span class="keyword">if</span> (context.hasChanges) &#123;</span><br><span class="line">    [context save:<span class="literal">nil</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 错误处理</span></span><br><span class="line"><span class="keyword">if</span> (error) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"CoreData Delete Data Error : %@"</span>, error);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>修改操作</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 建立获取数据的请求对象，并指明操作的实体为Employee</span></span><br><span class="line"><span class="built_in">NSFetchRequest</span> *request = [<span class="built_in">NSFetchRequest</span> fetchRequestWithEntityName:<span class="string">@"Employee"</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建谓词对象，设置过滤条件</span></span><br><span class="line"><span class="built_in">NSPredicate</span> *predicate = [<span class="built_in">NSPredicate</span> predicateWithFormat:<span class="string">@"name = %@"</span>, <span class="string">@"lxz"</span>];</span><br><span class="line">request.predicate = predicate;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 执行获取请求，获取到符合要求的托管对象</span></span><br><span class="line"><span class="built_in">NSError</span> *error = <span class="literal">nil</span>;</span><br><span class="line"><span class="built_in">NSArray</span>&lt;Employee *&gt; *employees = [context executeFetchRequest:request error:&amp;error];</span><br><span class="line">[employees enumerateObjectsUsingBlock:^(Employee * _Nonnull obj, <span class="built_in">NSUInteger</span> idx, <span class="built_in">BOOL</span> * _Nonnull stop) &#123;</span><br><span class="line">    obj.height = @<span class="number">3.</span>f;</span><br><span class="line">&#125;];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 将上面的修改进行存储</span></span><br><span class="line"><span class="keyword">if</span> (context.hasChanges) &#123;</span><br><span class="line">    [context save:<span class="literal">nil</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 错误处理</span></span><br><span class="line"><span class="keyword">if</span> (error) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"CoreData Update Data Error : %@"</span>, error);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>查找操作</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 建立获取数据的请求对象，指明操作的实体为Employee</span></span><br><span class="line"><span class="built_in">NSFetchRequest</span> *request = [<span class="built_in">NSFetchRequest</span> fetchRequestWithEntityName:<span class="string">@"Employee"</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 执行获取操作，获取所有Employee托管对象</span></span><br><span class="line"><span class="built_in">NSError</span> *error = <span class="literal">nil</span>;</span><br><span class="line"><span class="built_in">NSArray</span>&lt;Employee *&gt; *employees = [context executeFetchRequest:request error:&amp;error];</span><br><span class="line">[employees enumerateObjectsUsingBlock:^(Employee * _Nonnull obj, <span class="built_in">NSUInteger</span> idx, <span class="built_in">BOOL</span> * _Nonnull stop) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"Employee Name : %@, Height : %@, Brithday : %@"</span>, obj.name, obj.height, obj.brithday);</span><br><span class="line">&#125;];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 错误处理</span></span><br><span class="line"><span class="keyword">if</span> (error) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@"CoreData Ergodic Data Error : %@"</span>, error);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>查找操作最简单粗暴，因为是演示代码，所以直接将所有Employee表中的托管对象加载出来。在实际开发中肯定不会这样做，只需要加载需要的数据。后面还会讲到一些更高级的操作，会涉及到获取方面的东西。</p>
+</li>
+</ol>
+<h3 id="四、版本迁移"><a href="#四、版本迁移" class="headerlink" title="四、版本迁移"></a>四、版本迁移</h3><p>几种版本迁移方案，在迁移之前都需要对原有的模型文件创建新的版本</p>
+<p><strong>选中需要做迁移的模型文件 -&gt; 点击菜单栏Editor -&gt; Add Model Versioon -&gt; 选择基于哪个版本的的模型文件（一般都是选择目前最新的版本），新建模型文件完成。</strong></p>
+<p>对于新版本的模型文件的命名，一般会拿当前工程版本号当后缀，这样在模型文件比较多时，可以很容易将模型文件版本和工程版本对应起来。</p>
+<ol>
+<li><p>轻量级迁移 （修改了model文件，不过不做迁移，在使用数据操作就会闪退，除非删掉沙盒里的sqlite）</p>
+</li>
+<li><p>Mapping Model迁移方案</p>
+</li>
+<li><p>渐进式迁移</p>
+</li>
+<li><p>更复杂的迁移需求</p>
+</li>
+</ol>
+<h3 id="五、多线程"><a href="#五、多线程" class="headerlink" title="五、多线程"></a>五、多线程</h3><p>在业务比较复杂的情况下，需要进行大量数据处理，并且还需要涉及到UI的操作。对于这种复杂需求，如果都放在主队列中，对性能和界面流畅度都会有很大的影响，导致用户体验非常差，降低屏幕FPS。对于这种情况，可以采取多个MOC配合的方式。</p>
+<p><strong>Core Data多线程操作的基本原则</strong><br>不允许跨线程访问MOC： 在某一个MOC上的CRUD操作只能在它的操作线程上进行<br>不允许跨线程访问MO：对MO的操作只能在它所属的MOC的操作线程上进行。需要注意的是，访问一个FRC的fetchedObjects数组也只能在FRC所属的MOC的操作线程上进行</p>
+<p><strong>iOS5之前使用多个MOC</strong></p>
+<p>在iOS5之前实现MOC的多线程，可以创建多个MOC，多个MOC使用同一个PSC，并让多个MOC实现数据同步。通过这种方式不用担心PSC在调用过程中的线程问题，MOC在使用PSC进行save操作时，会对PSC进行加锁，等当前加锁的MOC执行完操作之后，其他MOC才能继续执行操作。</p>
+<p>每一个PSC都对应着一个持久化存储区，PSC知道存储区中数据存储的数据结构，而MOC需要使用这个PSC进行save操作的实现。<br>这样做有一个问题，当一个MOC发生改变并持久化到本地时，系统并不会将其他MOC缓存在内存中的NSManagedObject对象改变。所以这就需要我们在MOC发生改变时，将其他MOC数据更新。</p>
+<p>根据上面的解释，在下面例子中创建了一个主队列的mainMOC，主要用于UI操作。一个私有队列的backgroundMOC，用于除UI之外的耗时操作，两个MOC使用的同一个PSC。</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 获取PSC实例对象</span></span><br><span class="line">- (<span class="built_in">NSPersistentStoreCoordinator</span> *)persistentStoreCoordinator &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建托管对象模型，并指明加载Company模型文件</span></span><br><span class="line">    <span class="built_in">NSURL</span> *modelPath = [[<span class="built_in">NSBundle</span> mainBundle] URLForResource:<span class="string">@"Company"</span> withExtension:<span class="string">@"momd"</span>];</span><br><span class="line">    <span class="built_in">NSManagedObjectModel</span> *model = [[<span class="built_in">NSManagedObjectModel</span> alloc] initWithContentsOfURL:modelPath];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建PSC对象，并将托管对象模型当做参数传入，其他MOC都是用这一个PSC。</span></span><br><span class="line">    <span class="built_in">NSPersistentStoreCoordinator</span> *PSC = [[<span class="built_in">NSPersistentStoreCoordinator</span> alloc] initWithManagedObjectModel:model];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 根据指定的路径，创建并关联本地数据库</span></span><br><span class="line">    <span class="built_in">NSString</span> *dataPath = <span class="built_in">NSSearchPathForDirectoriesInDomains</span>(<span class="built_in">NSDocumentDirectory</span>, <span class="built_in">NSUserDomainMask</span>, <span class="literal">YES</span>).lastObject;</span><br><span class="line">    dataPath = [dataPath stringByAppendingFormat:<span class="string">@"/%@.sqlite"</span>, <span class="string">@"Company"</span>];</span><br><span class="line">    [PSC addPersistentStoreWithType:<span class="built_in">NSSQLiteStoreType</span> configuration:<span class="literal">nil</span> URL:[<span class="built_in">NSURL</span> fileURLWithPath:dataPath] options:<span class="literal">nil</span> error:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> PSC;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 初始化用于本地存储的所有MOC</span></span><br><span class="line">- (<span class="keyword">void</span>)createManagedObjectContext &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建PSC实例对象，其他MOC都用这一个PSC。</span></span><br><span class="line">    <span class="built_in">NSPersistentStoreCoordinator</span> *PSC = <span class="keyword">self</span>.persistentStoreCoordinator;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建主队列MOC，用于执行UI操作</span></span><br><span class="line">    <span class="built_in">NSManagedObjectContext</span> *mainMOC = [[<span class="built_in">NSManagedObjectContext</span> alloc] initWithConcurrencyType:<span class="built_in">NSMainQueueConcurrencyType</span>];</span><br><span class="line">    mainMOC.persistentStoreCoordinator = PSC;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建私有队列MOC，用于执行其他耗时操作</span></span><br><span class="line">    <span class="built_in">NSManagedObjectContext</span> *backgroundMOC = [[<span class="built_in">NSManagedObjectContext</span> alloc] initWithConcurrencyType:<span class="built_in">NSPrivateQueueConcurrencyType</span>];</span><br><span class="line">    backgroundMOC.persistentStoreCoordinator = PSC;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通过监听NSManagedObjectContextDidSaveNotification通知，来获取所有MOC的改变消息</span></span><br><span class="line">    [[<span class="built_in">NSNotificationCenter</span> defaultCenter] addObserver:<span class="keyword">self</span> selector:<span class="keyword">@selector</span>(contextChanged:) name:<span class="built_in">NSManagedObjectContextDidSaveNotification</span> object:<span class="literal">nil</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// MOC改变后的通知回调</span></span><br><span class="line">- (<span class="keyword">void</span>)contextChanged:(<span class="built_in">NSNotification</span> *)noti &#123;</span><br><span class="line">    <span class="built_in">NSManagedObjectContext</span> *MOC = noti.object;</span><br><span class="line">    <span class="comment">// 这里需要做判断操作，判断当前改变的MOC是否我们将要做同步的MOC，如果就是当前MOC自己做的改变，那就不需要再同步自己了。</span></span><br><span class="line">    <span class="comment">// 由于项目中可能存在多个PSC，所以下面还需要判断PSC是否当前操作的PSC，如果不是当前PSC则不需要同步，不要去同步其他本地存储的数据。</span></span><br><span class="line">    [MOC performBlock:^&#123;</span><br><span class="line">        <span class="comment">// 直接调用系统提供的同步API，系统内部会完成同步的实现细节。</span></span><br><span class="line">        [MOC mergeChangesFromContextDidSaveNotification:noti];</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在上面的Demo中，创建了一个PSC，并将其他MOC都关联到这个PSC上，这样所有的MOC执行本地持久化相关的操作时，都是通过同一个PSC进行操作的。并在下面添加了一个通知，这个通知是监听所有MOC执行save操作后的通知，并在通知的回调方法中进行数据的合并。</p>
+<p><strong>iOS5之后使用多个MOC</strong></p>
+<p>在iOS5之后，MOC可以设置parentContext，一个parentContext可以拥有多个ChildContext。在ChildContext执行save操作后，会将操作push到parentContext，由parentContext去完成真正的save操作，而ChildContext所有的改变都会被parentContext所知晓，这解决了之前MOC手动同步数据的问题。</p>
+<p>需要注意的是，在ChildContext调用save方法之后，此时并没有将数据写入存储区，还需要调用parentContext的save方法。因为ChildContext并不拥有PSC，ChildContext也不需要设置PSC，所以需要parentContext调用PSC来执行真正的save操作。也就是只有拥有PSC的MOC执行save操作后，才是真正的执行了写入存储区的操作。</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="keyword">void</span>)createManagedObjectContext &#123;</span><br><span class="line">    <span class="comment">// 创建PSC实例对象，还是用上面Demo的实例化代码</span></span><br><span class="line">    <span class="built_in">NSPersistentStoreCoordinator</span> *PSC = <span class="keyword">self</span>.persistentStoreCoordinator;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建主队列MOC，用于执行UI操作</span></span><br><span class="line">    <span class="built_in">NSManagedObjectContext</span> *mainMOC = [[<span class="built_in">NSManagedObjectContext</span> alloc] initWithConcurrencyType:<span class="built_in">NSMainQueueConcurrencyType</span>];</span><br><span class="line">    mainMOC.persistentStoreCoordinator = PSC;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 创建私有队列MOC，用于执行其他耗时操作，backgroundMOC并不需要设置PSC</span></span><br><span class="line">    <span class="built_in">NSManagedObjectContext</span> *backgroundMOC = [[<span class="built_in">NSManagedObjectContext</span> alloc] initWithConcurrencyType:<span class="built_in">NSPrivateQueueConcurrencyType</span>];</span><br><span class="line">    backgroundMOC.parentContext = mainMOC;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 私有队列的MOC和主队列的MOC，在执行save操作时，都应该调用performBlock:方法，在自己的队列中执行save操作。</span></span><br><span class="line">    <span class="comment">// 私有队列的MOC执行完自己的save操作后，还调用了主队列MOC的save方法，来完成真正的持久化操作，否则不能持久化到本地</span></span><br><span class="line">    [backgroundMOC performBlock:^&#123;</span><br><span class="line">        [backgroundMOC save:<span class="literal">nil</span>];</span><br><span class="line">    </span><br><span class="line">        [mainMOC performBlock:^&#123;</span><br><span class="line">            [mainMOC save:<span class="literal">nil</span>];</span><br><span class="line">        &#125;];</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面例子中创建一个主队列的mainMOC，来完成UI相关的操作。创建私有队列的backgroundMOC，处理复杂逻辑以及数据处理操作，在实际开发中可以根据需求创建多个backgroundMOC。需要注意的是，在backgroundMOC执行完save方法后，又在mainMOC中执行了一次save方法，这步是很重要的。</p>
+<h3 id="多个MOC面临的多线程问题"><a href="#多个MOC面临的多线程问题" class="headerlink" title="多个MOC面临的多线程问题"></a>多个MOC面临的多线程问题</h3><p><strong>1.线程安全</strong><br>无论是MOC还是托管对象，都不应该在其他MOC的线程中执行操作，这两个API都不是线程安全的。但MOC可以在其他MOC线程中调用performBlock:方法，切换到自己的线程执行操作。</p>
+<p>如果其他MOC想要拿到托管对象，并在自己的队列中使用托管对象，这是不允许的，托管对象是不能直接传递到其他MOC的线程的。但是可以通过获取NSManagedObject的NSManagedObjectID对象，在其他MOC中通过NSManagedObjectID对象，从持久化存储区中获取NSManagedObject对象，这样就是允许的。NSManagedObjectID是线程安全，并且可以跨线程使用的。</p>
+<p>可以通过MOC获取NSManagedObjectID对应的NSManagedObject对象，例如下面几个MOC的API。</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="built_in">NSManagedObject</span> *object = [context objectRegisteredForID:objectID];</span><br><span class="line"><span class="built_in">NSManagedObject</span> *object = [context objectWithID:objectID];</span><br></pre></td></tr></table></figure>
+
+<p>通过NSManagedObject对象的objectID属性，获取NSManagedObjectID类型的objectID对象。</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="built_in">NSManagedObjectID</span> *objectID = object.objectID;</span><br></pre></td></tr></table></figure>
+
+<p><strong>2.MOC同步时机</strong><br>设置MOC的parentContext属性之后，parent对于child的改变是知道的，但是child对于parent的改变是不知道的。苹果这样设计，应该是为了更好的数据同步。</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">Employee *emp = [<span class="built_in">NSEntityDescription</span> insertNewObjectForEntityForName:<span class="string">@"Employee"</span> inManagedObjectContext:backgroundMOC];</span><br><span class="line">emp.name = <span class="string">@"lxz"</span>;</span><br><span class="line">emp.brithday = [<span class="built_in">NSDate</span> date];</span><br><span class="line">emp.height = @<span class="number">1.7</span>f;</span><br><span class="line"></span><br><span class="line">[backgroundMOC performBlock:^&#123;</span><br><span class="line">    [backgroundMOC save:<span class="literal">nil</span>];</span><br><span class="line">    [mainMOC performBlock:^&#123;</span><br><span class="line">        [mainMOC save:<span class="literal">nil</span>];</span><br><span class="line">    &#125;];</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
+<p>在上面这段代码中，mainMOC是backgroundMOC的parentContext。在backgroundMOC执行save方法前，backgroundMOC和mainMOC都不能获取到Employee的数据，在backgroundMOC执行完save方法后，自身上下文发生改变的同时，也将改变push到mainMOC中，mainMOC也具有了Employee对象。</p>
+<p>所以在backgroundMOC的save方法执行时，是对内存中的上下文做了改变，当拥有PSC的mainMOC执行save方法后，是对本地存储区做了改变。</p>
+<h3 id="参看链接"><a href="#参看链接" class="headerlink" title="参看链接"></a>参看链接</h3><p>Core Data 概述:(相关CoreData系列文章)<a href="https://objccn.io/issue-4-1/" target="_blank" rel="noopener">https://objccn.io/issue-4-1/</a><br>认识CoreData - 初识CoreData(写了CoreData系列文章，都可以看看)：<a href="https://www.jianshu.com/p/c0e12a897971" target="_blank" rel="noopener">https://www.jianshu.com/p/c0e12a897971</a></p>
+<p>Core Data三层设计方案：<a href="https://github.com/ChenYongJunM/CoreDataMultithread" target="_blank" rel="noopener">https://github.com/ChenYongJunM/CoreDataMultithread</a></p>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
     <title>FMDB使用分析</title>
     <url>/2020/05/12/FMDB%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/</url>
     <content><![CDATA[<h3 id="一、基本介绍"><a href="#一、基本介绍" class="headerlink" title="一、基本介绍"></a>一、基本介绍</h3><ul>
@@ -378,6 +441,107 @@
 ]]></content>
       <categories>
         <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>iOS面试题收录（一）</title>
+    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%80%EF%BC%89/</url>
+    <content><![CDATA[<p>主题：是什么？</p>
+<h4 id="关键字const什么含义？"><a href="#关键字const什么含义？" class="headerlink" title="关键字const什么含义？"></a>关键字const什么含义？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> *a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> *a;</span><br><span class="line"><span class="keyword">int</span> * <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> * <span class="keyword">const</span> a;</span><br></pre></td></tr></table></figure>
+
+<p>1&gt;. 前两个的作用是一样：a 是一个常整型数<br>2&gt;. 第三、四个意味着 a 是一个指向常整型数的指针(整型数是不可修改的，但指针可以)<br>3&gt;. 第五个的意思：a 是一个指向整型数的常指针(指针指向的整型数是可以修改的，但指针是不可修改的)<br>4&gt;. 最后一个意味着：a 是一个指向常整型数的常指针(指针指向的整型数是不可修改的，同时指针也是不可修改的)</p>
+<h4 id="import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？"><a href="#import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？" class="headerlink" title="#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？"></a>#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？</h4><ol>
+<li><p>#import是Objective-C导入头文件的关键字，#include是C/C++导入头文件的关键字，使用#import头文件会自动只导入一次，不会重复导入。</p>
+</li>
+<li><p>@class告诉编译器某个类的声明，当执行时，才去查看类的实现文件，可以解决头文件的相互包含。</p>
+</li>
+<li><p>#import&lt;&gt;用来包含系统的头文件，#import””用来包含用户头文件。</p>
+</li>
+</ol>
+<h4 id="property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？"><a href="#property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？" class="headerlink" title="@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？"></a>@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？</h4><p>@property 的本质是:@property = ivar + getter + setter</p>
+<p>“属性” (property)有两大概念：ivar（实例变量）、getter+setter（存取方法）</p>
+<p>“属性” (property)作为 Objective-C 的一项特性，主要的作用就在于封装对象中的数据。 Objective-C 对象通常会把其所需要的数据保存为各种实例变量。实例变量一般通过“存取方法”(access method)来访问。其中，“获取方法” (getter)用于读取变量值，而“设置方法” (setter)用于写入变量值。</p>
+<h4 id="property中有哪些属性关键字以及作用？"><a href="#property中有哪些属性关键字以及作用？" class="headerlink" title="@property中有哪些属性关键字以及作用？"></a>@property中有哪些属性关键字以及作用？</h4><p><strong>线程安全</strong></p>
+<p><strong>nonatomic ：</strong>非原子操作。决定编译器生成的setter和getter方法是否是原子操作，一般使用nonatomic，效率高。<br><strong>atomic：</strong>多线程安全，但是性能低</p>
+<p><strong>内存管理</strong></p>
+<p><strong>strong：</strong>持有特性。setter方法将传入参数先保留，再赋值，传入参数的retaincount会+1。<br><strong>copy ：</strong>拷贝特性。setter方法将传入对象复制一份，需要完全一份新的变量时。<br><strong>assign：</strong>用于基本数据类型<br><strong>retain</strong>：相当于ARC中的strong</p>
+<p><strong>读写操作</strong></p>
+<p><strong>readwrite：</strong>可读可写特性。需要生成getter方法和setter方法<br><strong>readonly：</strong>只读特性。只会生成getter方法，不会生成setter方法，不希望属性在类外改变。</p>
+<h4 id="什么情况使用-weak-关键字，相比-assign-有什么不同？"><a href="#什么情况使用-weak-关键字，相比-assign-有什么不同？" class="headerlink" title="什么情况使用 weak 关键字，相比 assign 有什么不同？"></a>什么情况使用 weak 关键字，相比 assign 有什么不同？</h4><p>1&gt;.在 ARC 中,在有可能出现循环引用的时候,往往要通过让其中一端使用 weak 来解决,比如: delegate 代理属性。<br>2&gt;.自身已经对它进行一次强引用,没有必要再强引用一次,此时也会使用 weak,自定义 IBOutlet 控件属性一般也使用 weak（因为父控件的subViews数组已经对它有一个强引用）。</p>
+<p>不同点：<br>assign 可以用非 OC 对象，而 weak 必须用于 OC 对象。<br>weak 表明该属性定义了一种“非拥有关系”。在属性所指的对象销毁时，属性值会自动清空(nil)。</p>
+<h4 id="用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？"><a href="#用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？" class="headerlink" title="用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？"></a>用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？</h4><p>用 @property 声明 NSString、NSArray、NSDictionary 经常使用 copy 关键字，是因为他们有对应的可变类型：NSMutableString、NSMutableArray、NSMutableDictionary，他们之间可能进行赋值操作（就是把可变的赋值给不可变的），为确保对象中的字符串值不会无意间变动，应该在设置新属性值时拷贝一份。</p>
+<p>1&gt;. 因为父类指针可以指向子类对象,使用 copy 的目的是为了让本对象的属性不受外界影响,使用 copy 无论给我传入是一个可变对象还是不可对象,我本身持有的就是一个不可变的副本。<br>2&gt;. 如果我们使用是 strong ,那么这个属性就有可能指向一个可变对象,如果这个可变对象在外部被修改了,那么会影响该属性。<br>总结：使用copy的目的是，防止把可变类型的对象赋值给不可变类型的对象时，可变类型对象的值发送变化会无意间篡改不可变类型对象原来的值。</p>
+<h4 id="浅拷贝和深拷贝的区别？"><a href="#浅拷贝和深拷贝的区别？" class="headerlink" title="浅拷贝和深拷贝的区别？"></a>浅拷贝和深拷贝的区别？</h4><p><strong>浅拷贝：</strong>对一个对象地址的拷贝。源对象和副本对象是同一对象<br><strong>深拷贝：</strong>对一个对象的拷贝。源对象和副本对象是不同的两个对象</p>
+<h4 id="self-跟self-gt-什么区别？"><a href="#self-跟self-gt-什么区别？" class="headerlink" title="self.跟self-&gt;什么区别？"></a>self.跟self-&gt;什么区别？</h4><p>1&gt;. self.是调用get方法或者set放<br>2&gt;. self是当前本身，是一个指向当前对象的指针<br>3&gt;. self-&gt;是直接访问成员变量</p>
+<h4 id="一个objc对象的isa的指针指向什么？有什么作用？"><a href="#一个objc对象的isa的指针指向什么？有什么作用？" class="headerlink" title="一个objc对象的isa的指针指向什么？有什么作用？"></a>一个objc对象的isa的指针指向什么？有什么作用？</h4><p>指向他的类对象,从而可以找到对象上的方法</p>
+<h4 id="frame-和-bounds-有什么不同？"><a href="#frame-和-bounds-有什么不同？" class="headerlink" title="frame 和 bounds 有什么不同？"></a>frame 和 bounds 有什么不同？</h4><p><strong>frame：</strong>该view在父view坐标系统中的位置和大小。(参照点是父view的坐标系统)</p>
+<p><strong>bounds：</strong>该view在本身坐标系统中的位置和大小。(参照点是本身坐标系统)</p>
+<h4 id="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"><a href="#Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？" class="headerlink" title="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"></a>Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？</h4><p>OC不可以多继承，OC是单继承。有时可以用分类和协议来代替多继承<br>可以实现多个接口（协议）<br>Category是类别；一般情况用分类好，用Category去重写类的方法，仅对本Category有效，不会影响到其他类与原有类的关系。</p>
+<h4 id="Object-C有私有方法吗？私有变量呢？"><a href="#Object-C有私有方法吗？私有变量呢？" class="headerlink" title="Object-C有私有方法吗？私有变量呢？"></a>Object-C有私有方法吗？私有变量呢？</h4><p>1&gt;.OC没有类似@private的修饰词来修饰方法，只要写在.h文件中，就是公共方法<br>2&gt;. 如果你不在.h文件中声明，只在.m文件中实现，或在.m文件的Class Extension里声明，那么基本上和私有方法差不多，可以使用类扩展（Extension）来增加私有方法和私有变量<br>3&gt;. 使用private修饰的全局变量是私有变量</p>
+<h4 id="用伪代码写一个线程安全的单例模式"><a href="#用伪代码写一个线程安全的单例模式" class="headerlink" title="用伪代码写一个线程安全的单例模式"></a>用伪代码写一个线程安全的单例模式</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">static</span> XXManager * instance = <span class="literal">nil</span>;</span><br><span class="line">+ (<span class="keyword">instancetype</span>)shareInstance &#123;</span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [[<span class="keyword">self</span> alloc] init];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">id</span>)allocWithZone:(<span class="keyword">struct</span> _NSZone *)zone &#123;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [<span class="keyword">super</span> allocWithZone:zone];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line">- (<span class="keyword">id</span>)copyWithZone:(<span class="built_in">NSZone</span> *)zone &#123;</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="category-类别-和-extension-扩展-的区别"><a href="#category-类别-和-extension-扩展-的区别" class="headerlink" title="category(类别) 和 extension(扩展) 的区别"></a>category(类别) 和 extension(扩展) 的区别</h4><p>1&gt;. 类别有名字，类扩展没有分类名字，是一种特殊的分类。<br>2&gt;. 类别只能扩展方法（属性仅仅是声明，并没真正实现），类扩展可以扩展属性、成员变量和方法。<br>3&gt;. 继承可以增加，修改或者删除方法，并且可以增加属性。</p>
+<h4 id="delegate-和-notification-的区别"><a href="#delegate-和-notification-的区别" class="headerlink" title="delegate 和 notification 的区别"></a>delegate 和 notification 的区别</h4><p>二者都用于传递消息，不同之处主要在于一个是一对一的，另一个是一对多的<br><strong>notification：</strong>不需要两者之间有联系,实现一对多消息的转发<br><strong>delegate：</strong>需要两者之间必须建立联系，不然没法调用代理的方法</p>
+<h4 id="Objective-C-如何对内存管理的，说说你的看法和解决方法？"><a href="#Objective-C-如何对内存管理的，说说你的看法和解决方法？" class="headerlink" title="Objective-C 如何对内存管理的，说说你的看法和解决方法？"></a>Objective-C 如何对内存管理的，说说你的看法和解决方法？</h4><p>Objective-C的内存管理主要有三种方式ARC(自动内存计数)、手动内存计数、内存池。<br>1&gt;. 自动内存计数ARC：由Xcode自动在App编译阶段，在代码中添加内存管理代码。<br>2&gt;. 手动内存计数MRC：遵循内存谁申请、谁释放；谁添加，谁释放的原则。<br>3&gt;. 内存释放池Release Pool：把需要释放的内存统一放在一个池子中，当池子被抽干后(drain)，池子中所有的内存空间也被自动释放掉。内存池的释放操作分为自动和手动。自动释放受runloop机制影响。</p>
+<h4 id="GCD-与-NSOperation-的区别"><a href="#GCD-与-NSOperation-的区别" class="headerlink" title="GCD 与 NSOperation 的区别"></a>GCD 与 NSOperation 的区别</h4><p><strong>NSOperation:</strong>相对于GCD来说，更加强大。可以给operation之间添加依赖关系、取消一个正在执行的operation、暂停和恢复operationQueue等</p>
+<p><strong>GCD:</strong> 是一种更轻量级的，以FIFO(先进先出，后进后出)的顺序执行并发任务。使用GCD我们并不用关心任务的调度情况，而是系统会自动帮我们处理。但是GCD的短板也是非常明显的，比如我们想要给任务之间添加依赖关系、取消或者暂停一个正在执行的任务时就会变得束手无策。</p>
+<h4 id="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"><a href="#OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？" class="headerlink" title="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"></a>OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建线程的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="built_in">NSThread</span> detachNewThreadSelector:<span class="literal">nil</span> toTarget:<span class="literal">nil</span> withObject:<span class="literal">nil</span>]</span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorInBackground:<span class="literal">nil</span> withObject:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSThread</span> alloc] initWithTarget:<span class="literal">nil</span> selector:<span class="literal">nil</span> object:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_global_queue(<span class="number">0</span>, <span class="number">0</span>), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> new] addOperation:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 主线程中执行代码的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorOnMainThread:<span class="literal">nil</span> withObject:<span class="literal">nil</span> waitUntilDone:<span class="literal">YES</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_main_queue(), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> mainQueue] addOperation:<span class="literal">nil</span>];</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="runloop-和线程有什么关系"><a href="#runloop-和线程有什么关系" class="headerlink" title="runloop 和线程有什么关系?"></a>runloop 和线程有什么关系?</h4><p>runloop与线程是一一对应的，一个runloop对应一个核心的线程，为什么说是核心的，是因为runloop是可以嵌套的，但是核心的只能有一个，他们的关系保存在一个全局的字典里。 runloop是来管理线程的，当线程的runloop被开启后，线程会在执行完任务后进入休眠状态，有了任务就会被唤醒去执行任务。 runloop在第一次获取时被创建，在线程结束时被销毁。 对于主线程来说，runloop在程序一启动就默认创建好了。 对于子线程来说，runloop是懒加载的，只有当我们使用的时候才会创建，所以在子线程用定时器要注意：确保子线程的runloop被创建，不然定时器不会回调。</p>
+<h4 id="介绍下layoutSubview和drawRect"><a href="#介绍下layoutSubview和drawRect" class="headerlink" title="介绍下layoutSubview和drawRect"></a>介绍下layoutSubview和drawRect</h4><p>layoutSubviews调用情况</p>
+<ul>
+<li><p>init初始化UIView不会触发调用 </p>
+</li>
+<li><p>addSubview会触发调用 </p>
+</li>
+<li><p>改变view的width和height的时候回触发</p>
+</li>
+<li><p>调用 一个UIScrollView滚动会触发调用 </p>
+</li>
+<li><p>旋转screen会触发调用 </p>
+</li>
+<li><p>改变一个UIView大小的时候会触发</p>
+</li>
+<li><p>superView的layoutSubviews事件 直接调用setLayoutSubviews会触发调用 </p>
+</li>
+<li><p>-(void)viewWillAppear:(BOOL)animated会触发一次调用</p>
+</li>
+<li><p>-(void)viewDidAppear:(BOOL)animated 看情况</p>
+<p>可能有调用 drawRect调用情况 </p>
+</li>
+<li><p>如果UIView没有设置frame大小，直接导致drawRect不能被自动调用。 </p>
+</li>
+<li><p>drawRect在loadView和viewDidLoad这两个方法之后调用 调用sizeToFit后自动调用drawRect </p>
+</li>
+<li><p>通过设置contentMode值为UIViewContentModeRedraw。那么每次设置或者更改frame自动调用drawRect。 </p>
+</li>
+<li><p>直接调用setNeedsDisplay或者setNeedsDisplayInRect会触发调用</p>
+</li>
+</ul>
+<h4 id="UIview-和CAlayer-是什么关系-你-CLayer做过什么"><a href="#UIview-和CAlayer-是什么关系-你-CLayer做过什么" class="headerlink" title="UIview 和CAlayer 是什么关系? 你 CLayer做过什么?"></a>UIview 和CAlayer 是什么关系? 你 CLayer做过什么?</h4><p>区别： 首先UIView可以响应事件，Layer不可以.</p>
+<p>关系：</p>
+<ol>
+<li>UIView是CALayer的delegate </li>
+<li>UIView主要处理事件，CALayer负责绘制就更好 </li>
+<li>每个 UIView 内部都有一个 CALayer 在背后提供内容的绘制和显示，并且 UIView 的尺寸样式都由内部的 Layer 所提供。两者都有树状层级结构，layer 内部有 SubLayers，View 内部有 SubViews.但是 Layer 比 View 多了个AnchorPoint </li>
+</ol>
+<p>用layer做过什么：创建隐式动画 绘制边框圆角</p>
+<h4 id="iOS-UIViewController的完整生命周期"><a href="#iOS-UIViewController的完整生命周期" class="headerlink" title="iOS UIViewController的完整生命周期?"></a>iOS UIViewController的完整生命周期?</h4><p>按照执行顺序排列：</p>
+<p>1&gt;. <code>initWithCoder：</code>通过nib文件初始化时触发。<br>2&gt;. <code>awakeFromNib：</code>nib文件被加载的时候，会发生一个<code>awakeFromNib</code>的消息到nib文件中的每个对象。<br>3&gt;. <code>loadView：</code>开始加载视图控制器自带的view。<br>4&gt;. <code>viewDidLoad：</code>视图控制器的view被加载完成。<br>5&gt;. <code>viewWillAppear：</code>视图控制器的view将要显示在window上。<br>6&gt;. <code>updateViewConstraints：</code>视图控制器的view开始更新AutoLayout约束。<br>7&gt;. <code>viewWillLayoutSubviews：</code>视图控制器的view将要更新内容视图的位置。<br>8&gt;. <code>viewDidLayoutSubviews：</code>视图控制器的view已经更新视图的位置。<br>9&gt;. <code>viewDidAppear：</code>视图控制器的view已经展示到window上。<br>10&gt;. <code>viewWillDisappear：</code>视图控制器的view将要从window上消失。<br>11&gt;.<code>viewDidDisappear：</code>视图控制器的view已经从window上消失。</p>
+<h4 id="tableView的重用机制？"><a href="#tableView的重用机制？" class="headerlink" title="tableView的重用机制？"></a>tableView的重用机制？</h4><p>UITableView 通过重用单元格来达到节省内存的目的: 通过为每个单元格指定一个重用标识符，即指定了单元格的种类,当屏幕上的单元格滑出屏幕时，系统会把这个单元格添加到重用队列中，等待被重用，当有新单元格从屏幕外滑入屏幕内时，从重用队列中找看有没有可以重用的单元格，如果有，就拿过来用，如果没有就创建一个来使用</p>
+<h4 id="NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的"><a href="#NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的" class="headerlink" title="NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?"></a>NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?</h4><ol>
+<li><p>下载 NSURLConnection下载文件时，先是将整个文件下载到内存，然后再写入到沙盒，如果文件比较大，就会出现内存暴涨的情况。 而使用NSURLSessionUploadTask下载文件，会默认下载到沙盒中的tem文件中，不会出现内存暴涨的情况，但是在下载完成后会把tem中的临时文件删除，需要在初始化任务方法时，在completionHandler回调中增加保存文件的代码 </p>
+</li>
+<li><p>请求方法的控制 NSURLConnection实例化对象，实例化开始，默认请求就发送(同步发送),不需要调用start方法。而cancel可以停止请求的发送，停止后不能继续访问，需要创建新的请求。 NSURLSession有三个控制方法，取消(cancel)、暂停(suspend)、继续(resume)，暂停以后可以通过继续恢复当前的请求任务。 使用NSURLSession进行断点下载更加便捷. NSURLSession的构造方法（sessionWithConfiguration:delegate:delegateQueue）中有一个NSURLSessionConfiguration类的参数可以设置配置信息，其决定了cookie，安全和高速缓存策略，最大主机连接数，资源管理，网络超时等配置。NSURLConnection不能进行这个配置，相比较与NSURLConnection依赖与一个全局的配置对象，缺乏灵活性而言，NSURLSession有很大的改进</p>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>iOS面试汇总</category>
       </categories>
   </entry>
   <entry>
@@ -494,175 +658,10 @@
 ]]></content>
   </entry>
   <entry>
-    <title>iOS面试题收录（二）</title>
-    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
-    <content><![CDATA[<p>主题：怎么做？</p>
-<h4 id="设计模式是什么？-你知道哪些设计模式，并简要叙述？"><a href="#设计模式是什么？-你知道哪些设计模式，并简要叙述？" class="headerlink" title="设计模式是什么？ 你知道哪些设计模式，并简要叙述？"></a>设计模式是什么？ 你知道哪些设计模式，并简要叙述？</h4><p><strong>设计模式</strong>是一套被 反复使用、多数人知晓、经过分类编目的、代码设计经验的总结。</p>
-<p><strong>单例模式：</strong>单例模式确保某一个类只有一个实例，并提供一个访问它的全剧访问点。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F4a1dYXPf1oSfZYS7J1IQRA" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>工厂模式：</strong>工厂父类负责定义创建产品对象的公共接口，而工厂子类则负责生产具体的产品对象，即通过不停的工厂子类来创建不同的产品对象。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fjuejin.im%2Fpost%2F5bcb0362e51d450e7042eb6d" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>代理模式 :</strong>为某个对象提供一个代理，并由这个代理对象控制对原对象的访问。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F22eVsnQP2cTccWwIaLfz5g" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>适配器模式：</strong> 将一个接口转换成客户希望的另一个接口，使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。适配器模式的别名是包装器模式（Wrapper），是一种结构型设计模式。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F3abKTDIVy8BJJjThr2jgMQ" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>装饰者模式：</strong> 不改变原有对象的前提下，动态地给一个对象增加一些额外的功能。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FkoaeYH1U-nfrsSQ8FH3hhQ" target="_blank" rel="noopener">具体的详情可点击进入查看</a></p>
-<h4 id="MVC-和-MVVM-的区别？"><a href="#MVC-和-MVVM-的区别？" class="headerlink" title="MVC 和 MVVM 的区别？"></a>MVC 和 MVVM 的区别？</h4><p><strong>MVC</strong><br>MVC（Model-View-Controller）模式结构图，可分为三部分：模型（Model）、视图（View）、控制器（Controller）。其在MVC模式中所扮演的角色分别为：<br>Model：模型管理应用程序的数据，响应有关其状态信息（通常来自View）的请求，并响应指令以更改状态（通常来自Controller）。<br>View：视图管理数据的展示。<br>Controller：控制器解释用户的输入，并通知模型、视图进行状态更新<br>所有通信都是单向的。<br>优点：对Controller进行瘦身，将View内部的细节封装起来了，外界不知道View内部的具体实现<br>缺点：View和Controller依赖于Model</p>
-<p><strong>MVVM</strong><br>MVVM（Model View View-Model）就是为了解决过于臃肿的问题。MVVM的思想是将Controller中UI控制逻辑与业务逻辑进行分离，并抽离出一个View-Model来完成UI控制的逻辑。而Controller只需要负责业务逻辑即可</p>
-<p>唯一的区别是，View-Model可以调用Model定义的方法，从Model中获取数据以用于View，并对数据进行预处理，使View可以直接使用。View又可以向View-Model发出用户的操作命令，从而更改Model。MVVM实现了一种双向绑定机制。</p>
-<p>优点：降低了View和Model之间的耦合；分离了业务逻辑和视图逻辑。<br>缺点：View和Model双向绑定导致bug难以定位，两者中的任何一方出现问题，另一方也会出现问题；增加了胶水代码</p>
-<h4 id="iOS-内存的使用和优化的注意事项"><a href="#iOS-内存的使用和优化的注意事项" class="headerlink" title="iOS 内存的使用和优化的注意事项?"></a>iOS 内存的使用和优化的注意事项?</h4><p><strong>重用问题：</strong>如<code>UITableViewCells</code>、<code>UICollectionViewCells</code>、<code>UITableViewHeaderFooterViews</code>。设置正确的<code>reuseIdentifier</code>，充分重用<br><strong>不要使用太复杂的XIB/Storyboard：</strong>载入时就会将<code>XIB</code>/<code>storyboard</code>需要的所有资源，包括图片全部载入内存。<br><strong>尽量把views设置为不透明：</strong>当opque为NO的时候，图层的半透明取决于图片和其本身合成的图层为结果，可提高性能<br><strong>选择正确的数据结构：</strong>学会选择对业务场景最合适的数组结构是写出高效代码的基础。<br><strong>gzip/zip压缩：</strong>当从服务端下载相关附件时，可以通过gzip/zip压缩后再下载，使得内存更小，下载速度也更快。<br><strong>延迟加载：</strong>对于不应该使用的数据，使用延迟加载方式。对于不需要马上显示的视图，使用延迟加载方式。比如，网络请求失败时显示的提示界面，可能一直都不会使用到，因此应该使用延迟加载。<br><strong>数据缓存：</strong>对于cell的行高要缓存起来，使得reload数据时，效率也极高。<br>而对于那些网络数据，不需要每次都请求的，应该缓存起来。可以写入数据库，也可以通过plist文件存储<br><strong>处理内存警告：</strong>一般在基类统一处理内存警告，将相关不用资源立即释放掉</p>
-<h4 id="iOS-你在项目中是怎么优化内存的？"><a href="#iOS-你在项目中是怎么优化内存的？" class="headerlink" title="iOS 你在项目中是怎么优化内存的？"></a>iOS 你在项目中是怎么优化内存的？</h4><blockquote>
-<p>这个问题有时候笔试中也有，有时候有些面试官会在面试中问你这个问题</p>
-</blockquote>
-<p>1&gt;.避免庞大的Xib(Xib比frame消耗更多的CPU资源)<br>2&gt;.不要阻塞主线程，尽量把耗时的操作放到子线程<br>3&gt;.重用和延迟加载<br>4&gt;.尽量减少视图数量和层次<br>5&gt;.优化TableView,为了使TableVIew有更好的滚动性能可采取以下措施：</p>
-<ul>
-<li>正确使用ruseIdentifier来重用cells</li>
-<li>采用懒加载即延迟加载的方式加载cell上的控件</li>
-<li>当TableView滑动的时候不加载</li>
-<li>缓存cell的高度。在呈现cell前，把cell的高度计算好缓存起来，避免每次加载cell的时候都要计算</li>
-<li>尽量使用不透明的UI控件</li>
-</ul>
-<h4 id="写一个完整的代理，包括声明、实现"><a href="#写一个完整的代理，包括声明、实现" class="headerlink" title="写一个完整的代理，包括声明、实现"></a>写一个完整的代理，包括声明、实现</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 创建</span></span><br><span class="line"><span class="class"><span class="keyword">@protocol</span> <span class="title">PersonDelagate</span></span></span><br><span class="line"><span class="keyword">@required</span></span><br><span class="line">-(<span class="keyword">void</span>)eat:(<span class="built_in">NSString</span> *)foodName;</span><br><span class="line"><span class="keyword">@optional</span></span><br><span class="line">-(<span class="keyword">void</span>)run;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 声明 .h</span></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">Person</span>: <span class="title">NSObject</span>&lt;<span class="title">PersonDelagate</span>&gt;</span></span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现 .m</span></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">Person</span></span></span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)eat:(<span class="built_in">NSString</span> *)foodName &#123;</span><br><span class="line"><span class="built_in">NSLog</span>(<span class="string">@"吃:%@"</span>, foodName);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)run &#123;</span><br><span class="line">   <span class="built_in">NSLog</span>(<span class="string">@"run"</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="分析json、xml-的区别-json、xml-解析-式的底层是如何让处理的"><a href="#分析json、xml-的区别-json、xml-解析-式的底层是如何让处理的" class="headerlink" title="分析json、xml 的区别? json、xml 解析 式的底层是如何让处理的"></a>分析json、xml 的区别? json、xml 解析 式的底层是如何让处理的</h4><p>(一) JSON与XML的区别： </p>
-<p>（1）可读性方面：基本相同，XML的可读性比较好； </p>
-<p>（2）可扩展性方面：都具有良好的扩展性； </p>
-<p>（3）编码难度方面：相对而言，JSON的编码比较容易； </p>
-<p>（4）解码难度：JSON的解码难度基本为零，XML需要考虑子节点和父节点；</p>
-<p>（5）数据体积方面：JSON相对于XML来讲，数据体积小，传递的速度比较快； </p>
-<p>（6）数据交互方面：JSON与javascript的交互更加方便，更容易解析处理，更好的数据交互； </p>
-<p>（7）数据描述方面：XML对数据描述性比较好 </p>
-<p>（8）传输速度方面：JSON的速度远远快于XML。 </p>
-<p>(二）JSON与XML底层实现原理： 　</p>
-<p>（1）JSON底层原理：遍历字符串中的字符，最终根据格式规定的特殊字符，比如{}、[]、：等进行区分，{}号表示字典，[]号表示数组，：号是字典的键和值的分水岭，最终仍是将JSON转化为字典，只不过字典中的值可能是“字典、数组或者字符串而已”。 　　</p>
-<p>（2）XML底层原理：XML解析常用的解析方法有两种：DOM解析和SAX解析；DOM采用的是树形结构的方式访问XML文档，而SAX采用的是事件模型；DOM解析把XML文档转化为一个包含其内容的树，并可以对树进行遍历，使用DOM解析器的时候需要处理整个XML文档，所以对内存和性能的要求比较高；SAX在解析XML文档的时候可以触发一系列的事件，当发现给定的tag的时候，他可以激活一个回调方法，告诉该方法指定的标签已经找到，SAX对内存的要求通常会比较低，因为他让开发人员自己来决定所要处理的tag，特别是当开发人员只需要处理文档中所包含部分数据时，SAX这种扩展能力得到了更好的体现。</p>
-<h4 id="如何处理UITableVier-中Cell-动态计算高度的问题，都有哪些方案"><a href="#如何处理UITableVier-中Cell-动态计算高度的问题，都有哪些方案" class="headerlink" title="如何处理UITableVier 中Cell 动态计算高度的问题，都有哪些方案?"></a>如何处理UITableVier 中Cell 动态计算高度的问题，都有哪些方案?</h4><ol>
-<li><p>你的Cell要使用AutoLayout来布局约束这是必须的； 设置tableview的estimatedRowHeight为一个非零值，这个属性是设置一个预估的高度值，不用太精确。 设置tableview的rowHeight属性为UITableViewAutomaticDimension</p>
-</li>
-<li><p>第三方 UITableView+FDTemplateLayoutCell</p>
-</li>
-</ol>
-<h4 id="怎么高效的实现控件的圆角效果"><a href="#怎么高效的实现控件的圆角效果" class="headerlink" title="怎么高效的实现控件的圆角效果"></a>怎么高效的实现控件的圆角效果</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">//绘制圆角 </span></span><br><span class="line">-(<span class="built_in">UIImageView</span> *)roundedRectImageViewWithCornerRadius:(<span class="built_in">CGFloat</span>)cornerRadius &#123; </span><br><span class="line">  <span class="built_in">UIBezierPath</span> *bezierPath = [<span class="built_in">UIBezierPath</span> bezierPathWithRoundedRect:<span class="keyword">self</span>.bounds 		cornerRadius:cornerRadius]; </span><br><span class="line">  <span class="built_in">CAShapeLayer</span> *layer = [<span class="built_in">CAShapeLayer</span> layer]; </span><br><span class="line">  layer.path = bezierPath.CGPath; </span><br><span class="line">  <span class="keyword">self</span>.layer.mask = layer; </span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">self</span>; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="假如Controller太臃肿，如何优化"><a href="#假如Controller太臃肿，如何优化" class="headerlink" title="假如Controller太臃肿，如何优化?"></a>假如Controller太臃肿，如何优化?</h4><ol>
-<li><p>将网络请求抽象到单独的类中 方便在基类中处理公共逻辑； 方便在基类中处理缓存逻辑，以及其它一些公共逻辑； 方便做对象的持久化。 </p>
-</li>
-<li><p>将界面的封装抽象到专门的类中 构造专门的 UIView 的子类，来负责这些控件的拼装。这是最彻底和优雅的方式，不过稍微麻烦一些的是，你需要把这些控件的事件回调先接管，再都一一暴露回 Controller。 </p>
-</li>
-<li><p>构造 ViewModel 借鉴MVVM。具体做法就是将 ViewController 给 View 传递数据这个过程，抽象成构造 ViewModel 的过程。 </p>
-</li>
-<li><p>专门构造存储类 专门来处理本地数据的存取。 </p>
-</li>
-<li><p>整合常量</p>
-</li>
-</ol>
-<h4 id="项目中网络层如何做安全处理"><a href="#项目中网络层如何做安全处理" class="headerlink" title="项目中网络层如何做安全处理?"></a>项目中网络层如何做安全处理?</h4><ol>
-<li>判断API的调用请求是否来自于经过授权的APP。如若不是则拒绝请求访问 </li>
-<li>在数据请求的过程中进行URL加密处理：防止反编译，接口信息被静态分析。 </li>
-<li>数据传输加密：对客户端传输数据提供有效的加密方案，以防止网络接口的拦截。 如果可以尽量使用HTTPS，可以有效的避免接口数据在传输中被攻击。</li>
-</ol>
+    <title>iOS面试题收录（三）</title>
+    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%89%EF%BC%89/</url>
+    <content><![CDATA[<p>主题：高级问题</p>
 ]]></content>
-      <categories>
-        <category>iOS面试汇总</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>iOS面试题收录（一）</title>
-    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%80%EF%BC%89/</url>
-    <content><![CDATA[<p>主题：是什么？</p>
-<h4 id="关键字const什么含义？"><a href="#关键字const什么含义？" class="headerlink" title="关键字const什么含义？"></a>关键字const什么含义？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> *a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> *a;</span><br><span class="line"><span class="keyword">int</span> * <span class="keyword">const</span> a;</span><br><span class="line"><span class="keyword">int</span> <span class="keyword">const</span> * <span class="keyword">const</span> a;</span><br></pre></td></tr></table></figure>
-
-<p>1&gt;. 前两个的作用是一样：a 是一个常整型数<br>2&gt;. 第三、四个意味着 a 是一个指向常整型数的指针(整型数是不可修改的，但指针可以)<br>3&gt;. 第五个的意思：a 是一个指向整型数的常指针(指针指向的整型数是可以修改的，但指针是不可修改的)<br>4&gt;. 最后一个意味着：a 是一个指向常整型数的常指针(指针指向的整型数是不可修改的，同时指针也是不可修改的)</p>
-<h4 id="import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？"><a href="#import跟-include-有什么区别，-class呢，-import-lt-gt-跟-import“”有什么区别？" class="headerlink" title="#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？"></a>#import跟 #include 有什么区别，@class呢，#import&lt;&gt; 跟 #import“”有什么区别？</h4><ol>
-<li><p>#import是Objective-C导入头文件的关键字，#include是C/C++导入头文件的关键字，使用#import头文件会自动只导入一次，不会重复导入。</p>
-</li>
-<li><p>@class告诉编译器某个类的声明，当执行时，才去查看类的实现文件，可以解决头文件的相互包含。</p>
-</li>
-<li><p>#import&lt;&gt;用来包含系统的头文件，#import””用来包含用户头文件。</p>
-</li>
-</ol>
-<h4 id="property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？"><a href="#property-的本质是什么？ivar、getter、setter-是如何生成并添加到这个类中的？" class="headerlink" title="@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？"></a>@property 的本质是什么？ivar、getter、setter 是如何生成并添加到这个类中的？</h4><p>@property 的本质是:@property = ivar + getter + setter</p>
-<p>“属性” (property)有两大概念：ivar（实例变量）、getter+setter（存取方法）</p>
-<p>“属性” (property)作为 Objective-C 的一项特性，主要的作用就在于封装对象中的数据。 Objective-C 对象通常会把其所需要的数据保存为各种实例变量。实例变量一般通过“存取方法”(access method)来访问。其中，“获取方法” (getter)用于读取变量值，而“设置方法” (setter)用于写入变量值。</p>
-<h4 id="property中有哪些属性关键字以及作用？"><a href="#property中有哪些属性关键字以及作用？" class="headerlink" title="@property中有哪些属性关键字以及作用？"></a>@property中有哪些属性关键字以及作用？</h4><p><strong>线程安全</strong></p>
-<p><strong>nonatomic ：</strong>非原子操作。决定编译器生成的setter和getter方法是否是原子操作，一般使用nonatomic，效率高。<br><strong>atomic：</strong>多线程安全，但是性能低</p>
-<p><strong>内存管理</strong></p>
-<p><strong>strong：</strong>持有特性。setter方法将传入参数先保留，再赋值，传入参数的retaincount会+1。<br><strong>copy ：</strong>拷贝特性。setter方法将传入对象复制一份，需要完全一份新的变量时。<br><strong>assign：</strong>用于基本数据类型<br><strong>retain</strong>：相当于ARC中的strong</p>
-<p><strong>读写操作</strong></p>
-<p><strong>readwrite：</strong>可读可写特性。需要生成getter方法和setter方法<br><strong>readonly：</strong>只读特性。只会生成getter方法，不会生成setter方法，不希望属性在类外改变。</p>
-<h4 id="什么情况使用-weak-关键字，相比-assign-有什么不同？"><a href="#什么情况使用-weak-关键字，相比-assign-有什么不同？" class="headerlink" title="什么情况使用 weak 关键字，相比 assign 有什么不同？"></a>什么情况使用 weak 关键字，相比 assign 有什么不同？</h4><p>1&gt;.在 ARC 中,在有可能出现循环引用的时候,往往要通过让其中一端使用 weak 来解决,比如: delegate 代理属性。<br>2&gt;.自身已经对它进行一次强引用,没有必要再强引用一次,此时也会使用 weak,自定义 IBOutlet 控件属性一般也使用 weak（因为父控件的subViews数组已经对它有一个强引用）。</p>
-<p>不同点：<br>assign 可以用非 OC 对象，而 weak 必须用于 OC 对象。<br>weak 表明该属性定义了一种“非拥有关系”。在属性所指的对象销毁时，属性值会自动清空(nil)。</p>
-<h4 id="用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？"><a href="#用-property声明的-NSString-NSArray-NSDictionary-经常使用-copy-关键字，为什么？如果改用strong关键字，可能造成什么问题？" class="headerlink" title="用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？"></a>用@property声明的 NSString / NSArray / NSDictionary 经常使用 copy 关键字，为什么？如果改用strong关键字，可能造成什么问题？</h4><p>用 @property 声明 NSString、NSArray、NSDictionary 经常使用 copy 关键字，是因为他们有对应的可变类型：NSMutableString、NSMutableArray、NSMutableDictionary，他们之间可能进行赋值操作（就是把可变的赋值给不可变的），为确保对象中的字符串值不会无意间变动，应该在设置新属性值时拷贝一份。</p>
-<p>1&gt;. 因为父类指针可以指向子类对象,使用 copy 的目的是为了让本对象的属性不受外界影响,使用 copy 无论给我传入是一个可变对象还是不可对象,我本身持有的就是一个不可变的副本。<br>2&gt;. 如果我们使用是 strong ,那么这个属性就有可能指向一个可变对象,如果这个可变对象在外部被修改了,那么会影响该属性。<br>总结：使用copy的目的是，防止把可变类型的对象赋值给不可变类型的对象时，可变类型对象的值发送变化会无意间篡改不可变类型对象原来的值。</p>
-<h4 id="浅拷贝和深拷贝的区别？"><a href="#浅拷贝和深拷贝的区别？" class="headerlink" title="浅拷贝和深拷贝的区别？"></a>浅拷贝和深拷贝的区别？</h4><p><strong>浅拷贝：</strong>对一个对象地址的拷贝。源对象和副本对象是同一对象<br><strong>深拷贝：</strong>对一个对象的拷贝。源对象和副本对象是不同的两个对象</p>
-<h4 id="self-跟self-gt-什么区别？"><a href="#self-跟self-gt-什么区别？" class="headerlink" title="self.跟self-&gt;什么区别？"></a>self.跟self-&gt;什么区别？</h4><p>1&gt;. self.是调用get方法或者set放<br>2&gt;. self是当前本身，是一个指向当前对象的指针<br>3&gt;. self-&gt;是直接访问成员变量</p>
-<h4 id="一个objc对象的isa的指针指向什么？有什么作用？"><a href="#一个objc对象的isa的指针指向什么？有什么作用？" class="headerlink" title="一个objc对象的isa的指针指向什么？有什么作用？"></a>一个objc对象的isa的指针指向什么？有什么作用？</h4><p>指向他的类对象,从而可以找到对象上的方法</p>
-<h4 id="frame-和-bounds-有什么不同？"><a href="#frame-和-bounds-有什么不同？" class="headerlink" title="frame 和 bounds 有什么不同？"></a>frame 和 bounds 有什么不同？</h4><p><strong>frame：</strong>该view在父view坐标系统中的位置和大小。(参照点是父view的坐标系统)</p>
-<p><strong>bounds：</strong>该view在本身坐标系统中的位置和大小。(参照点是本身坐标系统)</p>
-<h4 id="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"><a href="#Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？" class="headerlink" title="Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？"></a>Objective-C的类可以多重继承么？没有的话用什么代替？可以实现多个接口么？Category是什么？重写一个类的方式用继承好还是分类好？为什么？</h4><p>OC不可以多继承，OC是单继承。有时可以用分类和协议来代替多继承<br>可以实现多个接口（协议）<br>Category是类别；一般情况用分类好，用Category去重写类的方法，仅对本Category有效，不会影响到其他类与原有类的关系。</p>
-<h4 id="Object-C有私有方法吗？私有变量呢？"><a href="#Object-C有私有方法吗？私有变量呢？" class="headerlink" title="Object-C有私有方法吗？私有变量呢？"></a>Object-C有私有方法吗？私有变量呢？</h4><p>1&gt;.OC没有类似@private的修饰词来修饰方法，只要写在.h文件中，就是公共方法<br>2&gt;. 如果你不在.h文件中声明，只在.m文件中实现，或在.m文件的Class Extension里声明，那么基本上和私有方法差不多，可以使用类扩展（Extension）来增加私有方法和私有变量<br>3&gt;. 使用private修饰的全局变量是私有变量</p>
-<h4 id="用伪代码写一个线程安全的单例模式"><a href="#用伪代码写一个线程安全的单例模式" class="headerlink" title="用伪代码写一个线程安全的单例模式"></a>用伪代码写一个线程安全的单例模式</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">static</span> XXManager * instance = <span class="literal">nil</span>;</span><br><span class="line">+ (<span class="keyword">instancetype</span>)shareInstance &#123;</span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [[<span class="keyword">self</span> alloc] init];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">+ (<span class="keyword">id</span>)allocWithZone:(<span class="keyword">struct</span> _NSZone *)zone &#123;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">static</span> <span class="built_in">dispatch_once_t</span> onceToken;</span><br><span class="line">      <span class="built_in">dispatch_once</span>(&amp;onceToken, ^&#123;</span><br><span class="line">        instance = [<span class="keyword">super</span> allocWithZone:zone];</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br><span class="line">- (<span class="keyword">id</span>)copyWithZone:(<span class="built_in">NSZone</span> *)zone &#123;</span><br><span class="line"><span class="keyword">return</span> instance;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="category-类别-和-extension-扩展-的区别"><a href="#category-类别-和-extension-扩展-的区别" class="headerlink" title="category(类别) 和 extension(扩展) 的区别"></a>category(类别) 和 extension(扩展) 的区别</h4><p>1&gt;. 类别有名字，类扩展没有分类名字，是一种特殊的分类。<br>2&gt;. 类别只能扩展方法（属性仅仅是声明，并没真正实现），类扩展可以扩展属性、成员变量和方法。<br>3&gt;. 继承可以增加，修改或者删除方法，并且可以增加属性。</p>
-<h4 id="delegate-和-notification-的区别"><a href="#delegate-和-notification-的区别" class="headerlink" title="delegate 和 notification 的区别"></a>delegate 和 notification 的区别</h4><p>二者都用于传递消息，不同之处主要在于一个是一对一的，另一个是一对多的<br><strong>notification：</strong>不需要两者之间有联系,实现一对多消息的转发<br><strong>delegate：</strong>需要两者之间必须建立联系，不然没法调用代理的方法</p>
-<h4 id="Objective-C-如何对内存管理的，说说你的看法和解决方法？"><a href="#Objective-C-如何对内存管理的，说说你的看法和解决方法？" class="headerlink" title="Objective-C 如何对内存管理的，说说你的看法和解决方法？"></a>Objective-C 如何对内存管理的，说说你的看法和解决方法？</h4><p>Objective-C的内存管理主要有三种方式ARC(自动内存计数)、手动内存计数、内存池。<br>1&gt;. 自动内存计数ARC：由Xcode自动在App编译阶段，在代码中添加内存管理代码。<br>2&gt;. 手动内存计数MRC：遵循内存谁申请、谁释放；谁添加，谁释放的原则。<br>3&gt;. 内存释放池Release Pool：把需要释放的内存统一放在一个池子中，当池子被抽干后(drain)，池子中所有的内存空间也被自动释放掉。内存池的释放操作分为自动和手动。自动释放受runloop机制影响。</p>
-<h4 id="GCD-与-NSOperation-的区别"><a href="#GCD-与-NSOperation-的区别" class="headerlink" title="GCD 与 NSOperation 的区别"></a>GCD 与 NSOperation 的区别</h4><p><strong>NSOperation:</strong>相对于GCD来说，更加强大。可以给operation之间添加依赖关系、取消一个正在执行的operation、暂停和恢复operationQueue等</p>
-<p><strong>GCD:</strong> 是一种更轻量级的，以FIFO(先进先出，后进后出)的顺序执行并发任务。使用GCD我们并不用关心任务的调度情况，而是系统会自动帮我们处理。但是GCD的短板也是非常明显的，比如我们想要给任务之间添加依赖关系、取消或者暂停一个正在执行的任务时就会变得束手无策。</p>
-<h4 id="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"><a href="#OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？" class="headerlink" title="OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？"></a>OC中创建线程的方法是什么？如果在主线程中执行代码，方法是什么？</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建线程的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="built_in">NSThread</span> detachNewThreadSelector:<span class="literal">nil</span> toTarget:<span class="literal">nil</span> withObject:<span class="literal">nil</span>]</span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorInBackground:<span class="literal">nil</span> withObject:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSThread</span> alloc] initWithTarget:<span class="literal">nil</span> selector:<span class="literal">nil</span> object:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_global_queue(<span class="number">0</span>, <span class="number">0</span>), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> new] addOperation:<span class="literal">nil</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 主线程中执行代码的方法</span></span><br><span class="line"></span><br><span class="line">- [<span class="keyword">self</span> performSelectorOnMainThread:<span class="literal">nil</span> withObject:<span class="literal">nil</span> waitUntilDone:<span class="literal">YES</span>];</span><br><span class="line"></span><br><span class="line">- <span class="built_in">dispatch_async</span>(dispatch_get_main_queue(), ^&#123;&#125;);</span><br><span class="line"></span><br><span class="line">- [[<span class="built_in">NSOperationQueue</span> mainQueue] addOperation:<span class="literal">nil</span>];</span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="runloop-和线程有什么关系"><a href="#runloop-和线程有什么关系" class="headerlink" title="runloop 和线程有什么关系?"></a>runloop 和线程有什么关系?</h4><p>runloop与线程是一一对应的，一个runloop对应一个核心的线程，为什么说是核心的，是因为runloop是可以嵌套的，但是核心的只能有一个，他们的关系保存在一个全局的字典里。 runloop是来管理线程的，当线程的runloop被开启后，线程会在执行完任务后进入休眠状态，有了任务就会被唤醒去执行任务。 runloop在第一次获取时被创建，在线程结束时被销毁。 对于主线程来说，runloop在程序一启动就默认创建好了。 对于子线程来说，runloop是懒加载的，只有当我们使用的时候才会创建，所以在子线程用定时器要注意：确保子线程的runloop被创建，不然定时器不会回调。</p>
-<h4 id="介绍下layoutSubview和drawRect"><a href="#介绍下layoutSubview和drawRect" class="headerlink" title="介绍下layoutSubview和drawRect"></a>介绍下layoutSubview和drawRect</h4><p>layoutSubviews调用情况</p>
-<ul>
-<li><p>init初始化UIView不会触发调用 </p>
-</li>
-<li><p>addSubview会触发调用 </p>
-</li>
-<li><p>改变view的width和height的时候回触发</p>
-</li>
-<li><p>调用 一个UIScrollView滚动会触发调用 </p>
-</li>
-<li><p>旋转screen会触发调用 </p>
-</li>
-<li><p>改变一个UIView大小的时候会触发</p>
-</li>
-<li><p>superView的layoutSubviews事件 直接调用setLayoutSubviews会触发调用 </p>
-</li>
-<li><p>-(void)viewWillAppear:(BOOL)animated会触发一次调用</p>
-</li>
-<li><p>-(void)viewDidAppear:(BOOL)animated 看情况</p>
-<p>可能有调用 drawRect调用情况 </p>
-</li>
-<li><p>如果UIView没有设置frame大小，直接导致drawRect不能被自动调用。 </p>
-</li>
-<li><p>drawRect在loadView和viewDidLoad这两个方法之后调用 调用sizeToFit后自动调用drawRect </p>
-</li>
-<li><p>通过设置contentMode值为UIViewContentModeRedraw。那么每次设置或者更改frame自动调用drawRect。 </p>
-</li>
-<li><p>直接调用setNeedsDisplay或者setNeedsDisplayInRect会触发调用</p>
-</li>
-</ul>
-<h4 id="UIview-和CAlayer-是什么关系-你-CLayer做过什么"><a href="#UIview-和CAlayer-是什么关系-你-CLayer做过什么" class="headerlink" title="UIview 和CAlayer 是什么关系? 你 CLayer做过什么?"></a>UIview 和CAlayer 是什么关系? 你 CLayer做过什么?</h4><p>区别： 首先UIView可以响应事件，Layer不可以.</p>
-<p>关系：</p>
-<ol>
-<li>UIView是CALayer的delegate </li>
-<li>UIView主要处理事件，CALayer负责绘制就更好 </li>
-<li>每个 UIView 内部都有一个 CALayer 在背后提供内容的绘制和显示，并且 UIView 的尺寸样式都由内部的 Layer 所提供。两者都有树状层级结构，layer 内部有 SubLayers，View 内部有 SubViews.但是 Layer 比 View 多了个AnchorPoint </li>
-</ol>
-<p>用layer做过什么：创建隐式动画 绘制边框圆角</p>
-<h4 id="iOS-UIViewController的完整生命周期"><a href="#iOS-UIViewController的完整生命周期" class="headerlink" title="iOS UIViewController的完整生命周期?"></a>iOS UIViewController的完整生命周期?</h4><p>按照执行顺序排列：</p>
-<p>1&gt;. <code>initWithCoder：</code>通过nib文件初始化时触发。<br>2&gt;. <code>awakeFromNib：</code>nib文件被加载的时候，会发生一个<code>awakeFromNib</code>的消息到nib文件中的每个对象。<br>3&gt;. <code>loadView：</code>开始加载视图控制器自带的view。<br>4&gt;. <code>viewDidLoad：</code>视图控制器的view被加载完成。<br>5&gt;. <code>viewWillAppear：</code>视图控制器的view将要显示在window上。<br>6&gt;. <code>updateViewConstraints：</code>视图控制器的view开始更新AutoLayout约束。<br>7&gt;. <code>viewWillLayoutSubviews：</code>视图控制器的view将要更新内容视图的位置。<br>8&gt;. <code>viewDidLayoutSubviews：</code>视图控制器的view已经更新视图的位置。<br>9&gt;. <code>viewDidAppear：</code>视图控制器的view已经展示到window上。<br>10&gt;. <code>viewWillDisappear：</code>视图控制器的view将要从window上消失。<br>11&gt;.<code>viewDidDisappear：</code>视图控制器的view已经从window上消失。</p>
-<h4 id="tableView的重用机制？"><a href="#tableView的重用机制？" class="headerlink" title="tableView的重用机制？"></a>tableView的重用机制？</h4><p>UITableView 通过重用单元格来达到节省内存的目的: 通过为每个单元格指定一个重用标识符，即指定了单元格的种类,当屏幕上的单元格滑出屏幕时，系统会把这个单元格添加到重用队列中，等待被重用，当有新单元格从屏幕外滑入屏幕内时，从重用队列中找看有没有可以重用的单元格，如果有，就拿过来用，如果没有就创建一个来使用</p>
-<h4 id="NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的"><a href="#NSIRLConnection-和NSLRLSession-的区别是-么-NSURLProtocol是做什么的" class="headerlink" title="NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?"></a>NSIRLConnection 和NSLRLSession 的区别是 么? NSURLProtocol是做什么的?</h4><ol>
-<li><p>下载 NSURLConnection下载文件时，先是将整个文件下载到内存，然后再写入到沙盒，如果文件比较大，就会出现内存暴涨的情况。 而使用NSURLSessionUploadTask下载文件，会默认下载到沙盒中的tem文件中，不会出现内存暴涨的情况，但是在下载完成后会把tem中的临时文件删除，需要在初始化任务方法时，在completionHandler回调中增加保存文件的代码 </p>
-</li>
-<li><p>请求方法的控制 NSURLConnection实例化对象，实例化开始，默认请求就发送(同步发送),不需要调用start方法。而cancel可以停止请求的发送，停止后不能继续访问，需要创建新的请求。 NSURLSession有三个控制方法，取消(cancel)、暂停(suspend)、继续(resume)，暂停以后可以通过继续恢复当前的请求任务。 使用NSURLSession进行断点下载更加便捷. NSURLSession的构造方法（sessionWithConfiguration:delegate:delegateQueue）中有一个NSURLSessionConfiguration类的参数可以设置配置信息，其决定了cookie，安全和高速缓存策略，最大主机连接数，资源管理，网络超时等配置。NSURLConnection不能进行这个配置，相比较与NSURLConnection依赖与一个全局的配置对象，缺乏灵活性而言，NSURLSession有很大的改进</p>
-</li>
-</ol>
-]]></content>
-      <categories>
-        <category>iOS面试汇总</category>
-      </categories>
   </entry>
   <entry>
     <title>Realm使用分析</title>
@@ -992,47 +991,73 @@
       </categories>
   </entry>
   <entry>
-    <title>iOS面试题收录（三）</title>
-    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%89%EF%BC%89/</url>
-    <content><![CDATA[<p>主题：高级问题</p>
-]]></content>
-  </entry>
-  <entry>
-    <title>load和initialize方法的区别</title>
-    <url>/2020/05/12/load%E5%92%8Cinitialize%E6%96%B9%E6%B3%95%E7%9A%84%E5%8C%BA%E5%88%AB/</url>
-    <content><![CDATA[<h4 id="调用方式"><a href="#调用方式" class="headerlink" title="调用方式"></a>调用方式</h4><p>1、load是根据函数地址直接调用</p>
-<p>2、initialize是通过objc_msgSeng调用</p>
-<h4 id="调用时刻"><a href="#调用时刻" class="headerlink" title="调用时刻"></a>调用时刻</h4><p>1、load是runtime加载类、分类的时候调用(只会调用一次)</p>
-<p>2、initialize是类第一次接收到消息的时候调用, 每一个类只会initialize一次(如果子类没有实现initialize方法, 会调用父类的initialize方法, 所以父类的initialize方法可能会调用多次)</p>
-<h4 id="load和initializee的调用顺序"><a href="#load和initializee的调用顺序" class="headerlink" title="load和initializee的调用顺序"></a>load和initializee的调用顺序</h4><p><strong>load</strong></p>
-<p>1、先调用类的load</p>
+    <title>iOS面试题收录（二）</title>
+    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
+    <content><![CDATA[<p>主题：怎么做？</p>
+<h4 id="设计模式是什么？-你知道哪些设计模式，并简要叙述？"><a href="#设计模式是什么？-你知道哪些设计模式，并简要叙述？" class="headerlink" title="设计模式是什么？ 你知道哪些设计模式，并简要叙述？"></a>设计模式是什么？ 你知道哪些设计模式，并简要叙述？</h4><p><strong>设计模式</strong>是一套被 反复使用、多数人知晓、经过分类编目的、代码设计经验的总结。</p>
+<p><strong>单例模式：</strong>单例模式确保某一个类只有一个实例，并提供一个访问它的全剧访问点。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F4a1dYXPf1oSfZYS7J1IQRA" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>工厂模式：</strong>工厂父类负责定义创建产品对象的公共接口，而工厂子类则负责生产具体的产品对象，即通过不停的工厂子类来创建不同的产品对象。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fjuejin.im%2Fpost%2F5bcb0362e51d450e7042eb6d" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>代理模式 :</strong>为某个对象提供一个代理，并由这个代理对象控制对原对象的访问。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F22eVsnQP2cTccWwIaLfz5g" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>适配器模式：</strong> 将一个接口转换成客户希望的另一个接口，使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。适配器模式的别名是包装器模式（Wrapper），是一种结构型设计模式。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F3abKTDIVy8BJJjThr2jgMQ" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>装饰者模式：</strong> 不改变原有对象的前提下，动态地给一个对象增加一些额外的功能。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FkoaeYH1U-nfrsSQ8FH3hhQ" target="_blank" rel="noopener">具体的详情可点击进入查看</a></p>
+<h4 id="MVC-和-MVVM-的区别？"><a href="#MVC-和-MVVM-的区别？" class="headerlink" title="MVC 和 MVVM 的区别？"></a>MVC 和 MVVM 的区别？</h4><p><strong>MVC</strong><br>MVC（Model-View-Controller）模式结构图，可分为三部分：模型（Model）、视图（View）、控制器（Controller）。其在MVC模式中所扮演的角色分别为：<br>Model：模型管理应用程序的数据，响应有关其状态信息（通常来自View）的请求，并响应指令以更改状态（通常来自Controller）。<br>View：视图管理数据的展示。<br>Controller：控制器解释用户的输入，并通知模型、视图进行状态更新<br>所有通信都是单向的。<br>优点：对Controller进行瘦身，将View内部的细节封装起来了，外界不知道View内部的具体实现<br>缺点：View和Controller依赖于Model</p>
+<p><strong>MVVM</strong><br>MVVM（Model View View-Model）就是为了解决过于臃肿的问题。MVVM的思想是将Controller中UI控制逻辑与业务逻辑进行分离，并抽离出一个View-Model来完成UI控制的逻辑。而Controller只需要负责业务逻辑即可</p>
+<p>唯一的区别是，View-Model可以调用Model定义的方法，从Model中获取数据以用于View，并对数据进行预处理，使View可以直接使用。View又可以向View-Model发出用户的操作命令，从而更改Model。MVVM实现了一种双向绑定机制。</p>
+<p>优点：降低了View和Model之间的耦合；分离了业务逻辑和视图逻辑。<br>缺点：View和Model双向绑定导致bug难以定位，两者中的任何一方出现问题，另一方也会出现问题；增加了胶水代码</p>
+<h4 id="iOS-内存的使用和优化的注意事项"><a href="#iOS-内存的使用和优化的注意事项" class="headerlink" title="iOS 内存的使用和优化的注意事项?"></a>iOS 内存的使用和优化的注意事项?</h4><p><strong>重用问题：</strong>如<code>UITableViewCells</code>、<code>UICollectionViewCells</code>、<code>UITableViewHeaderFooterViews</code>。设置正确的<code>reuseIdentifier</code>，充分重用<br><strong>不要使用太复杂的XIB/Storyboard：</strong>载入时就会将<code>XIB</code>/<code>storyboard</code>需要的所有资源，包括图片全部载入内存。<br><strong>尽量把views设置为不透明：</strong>当opque为NO的时候，图层的半透明取决于图片和其本身合成的图层为结果，可提高性能<br><strong>选择正确的数据结构：</strong>学会选择对业务场景最合适的数组结构是写出高效代码的基础。<br><strong>gzip/zip压缩：</strong>当从服务端下载相关附件时，可以通过gzip/zip压缩后再下载，使得内存更小，下载速度也更快。<br><strong>延迟加载：</strong>对于不应该使用的数据，使用延迟加载方式。对于不需要马上显示的视图，使用延迟加载方式。比如，网络请求失败时显示的提示界面，可能一直都不会使用到，因此应该使用延迟加载。<br><strong>数据缓存：</strong>对于cell的行高要缓存起来，使得reload数据时，效率也极高。<br>而对于那些网络数据，不需要每次都请求的，应该缓存起来。可以写入数据库，也可以通过plist文件存储<br><strong>处理内存警告：</strong>一般在基类统一处理内存警告，将相关不用资源立即释放掉</p>
+<h4 id="iOS-你在项目中是怎么优化内存的？"><a href="#iOS-你在项目中是怎么优化内存的？" class="headerlink" title="iOS 你在项目中是怎么优化内存的？"></a>iOS 你在项目中是怎么优化内存的？</h4><blockquote>
+<p>这个问题有时候笔试中也有，有时候有些面试官会在面试中问你这个问题</p>
+</blockquote>
+<p>1&gt;.避免庞大的Xib(Xib比frame消耗更多的CPU资源)<br>2&gt;.不要阻塞主线程，尽量把耗时的操作放到子线程<br>3&gt;.重用和延迟加载<br>4&gt;.尽量减少视图数量和层次<br>5&gt;.优化TableView,为了使TableVIew有更好的滚动性能可采取以下措施：</p>
 <ul>
-<li><p>先编译的类, 优先调用load（先编译，先调用）</p>
-</li>
-<li><p>调用子类的load之前, 会先调用父类的load</p>
-</li>
+<li>正确使用ruseIdentifier来重用cells</li>
+<li>采用懒加载即延迟加载的方式加载cell上的控件</li>
+<li>当TableView滑动的时候不加载</li>
+<li>缓存cell的高度。在呈现cell前，把cell的高度计算好缓存起来，避免每次加载cell的时候都要计算</li>
+<li>尽量使用不透明的UI控件</li>
 </ul>
-<p>2、再调用分类的load</p>
-<ul>
-<li>先编译的分类, 优先调用load（先编译，先调用）</li>
-</ul>
-<p><strong>initialize</strong></p>
-<p>先调用父类的+initialize，再调用子类的+initialize。（先初始化父类，再初始化子类，每个类只会初始化1次）<br>如果分类实现了+initialize，会覆盖原有类的+initialize</p>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ol>
-<li><p>+initialize和+load的最大区别是</p>
-<ul>
-<li><p>initialize是通过objc_msgSeng调用，load是根据函数地址直接调用；</p>
+<h4 id="写一个完整的代理，包括声明、实现"><a href="#写一个完整的代理，包括声明、实现" class="headerlink" title="写一个完整的代理，包括声明、实现"></a>写一个完整的代理，包括声明、实现</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 创建</span></span><br><span class="line"><span class="class"><span class="keyword">@protocol</span> <span class="title">PersonDelagate</span></span></span><br><span class="line"><span class="keyword">@required</span></span><br><span class="line">-(<span class="keyword">void</span>)eat:(<span class="built_in">NSString</span> *)foodName;</span><br><span class="line"><span class="keyword">@optional</span></span><br><span class="line">-(<span class="keyword">void</span>)run;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 声明 .h</span></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">Person</span>: <span class="title">NSObject</span>&lt;<span class="title">PersonDelagate</span>&gt;</span></span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现 .m</span></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">Person</span></span></span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)eat:(<span class="built_in">NSString</span> *)foodName &#123;</span><br><span class="line"><span class="built_in">NSLog</span>(<span class="string">@"吃:%@"</span>, foodName);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)run &#123;</span><br><span class="line">   <span class="built_in">NSLog</span>(<span class="string">@"run"</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="分析json、xml-的区别-json、xml-解析-式的底层是如何让处理的"><a href="#分析json、xml-的区别-json、xml-解析-式的底层是如何让处理的" class="headerlink" title="分析json、xml 的区别? json、xml 解析 式的底层是如何让处理的"></a>分析json、xml 的区别? json、xml 解析 式的底层是如何让处理的</h4><p>(一) JSON与XML的区别： </p>
+<p>（1）可读性方面：基本相同，XML的可读性比较好； </p>
+<p>（2）可扩展性方面：都具有良好的扩展性； </p>
+<p>（3）编码难度方面：相对而言，JSON的编码比较容易； </p>
+<p>（4）解码难度：JSON的解码难度基本为零，XML需要考虑子节点和父节点；</p>
+<p>（5）数据体积方面：JSON相对于XML来讲，数据体积小，传递的速度比较快； </p>
+<p>（6）数据交互方面：JSON与javascript的交互更加方便，更容易解析处理，更好的数据交互； </p>
+<p>（7）数据描述方面：XML对数据描述性比较好 </p>
+<p>（8）传输速度方面：JSON的速度远远快于XML。 </p>
+<p>(二）JSON与XML底层实现原理： 　</p>
+<p>（1）JSON底层原理：遍历字符串中的字符，最终根据格式规定的特殊字符，比如{}、[]、：等进行区分，{}号表示字典，[]号表示数组，：号是字典的键和值的分水岭，最终仍是将JSON转化为字典，只不过字典中的值可能是“字典、数组或者字符串而已”。 　　</p>
+<p>（2）XML底层原理：XML解析常用的解析方法有两种：DOM解析和SAX解析；DOM采用的是树形结构的方式访问XML文档，而SAX采用的是事件模型；DOM解析把XML文档转化为一个包含其内容的树，并可以对树进行遍历，使用DOM解析器的时候需要处理整个XML文档，所以对内存和性能的要求比较高；SAX在解析XML文档的时候可以触发一系列的事件，当发现给定的tag的时候，他可以激活一个回调方法，告诉该方法指定的标签已经找到，SAX对内存的要求通常会比较低，因为他让开发人员自己来决定所要处理的tag，特别是当开发人员只需要处理文档中所包含部分数据时，SAX这种扩展能力得到了更好的体现。</p>
+<h4 id="如何处理UITableVier-中Cell-动态计算高度的问题，都有哪些方案"><a href="#如何处理UITableVier-中Cell-动态计算高度的问题，都有哪些方案" class="headerlink" title="如何处理UITableVier 中Cell 动态计算高度的问题，都有哪些方案?"></a>如何处理UITableVier 中Cell 动态计算高度的问题，都有哪些方案?</h4><ol>
+<li><p>你的Cell要使用AutoLayout来布局约束这是必须的； 设置tableview的estimatedRowHeight为一个非零值，这个属性是设置一个预估的高度值，不用太精确。 设置tableview的rowHeight属性为UITableViewAutomaticDimension</p>
 </li>
-<li><p>如果子类没有实现initialize方法, 会调用父类的initialize方法, 所以父类的initialize方法可能会调用多次</p>
+<li><p>第三方 UITableView+FDTemplateLayoutCell</p>
 </li>
-<li><p>如果分类实现了+initialize，会覆盖原有类的+initialize</p>
+</ol>
+<h4 id="怎么高效的实现控件的圆角效果"><a href="#怎么高效的实现控件的圆角效果" class="headerlink" title="怎么高效的实现控件的圆角效果"></a>怎么高效的实现控件的圆角效果</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">//绘制圆角 </span></span><br><span class="line">-(<span class="built_in">UIImageView</span> *)roundedRectImageViewWithCornerRadius:(<span class="built_in">CGFloat</span>)cornerRadius &#123; </span><br><span class="line">  <span class="built_in">UIBezierPath</span> *bezierPath = [<span class="built_in">UIBezierPath</span> bezierPathWithRoundedRect:<span class="keyword">self</span>.bounds 		cornerRadius:cornerRadius]; </span><br><span class="line">  <span class="built_in">CAShapeLayer</span> *layer = [<span class="built_in">CAShapeLayer</span> layer]; </span><br><span class="line">  layer.path = bezierPath.CGPath; </span><br><span class="line">  <span class="keyword">self</span>.layer.mask = layer; </span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">self</span>; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="假如Controller太臃肿，如何优化"><a href="#假如Controller太臃肿，如何优化" class="headerlink" title="假如Controller太臃肿，如何优化?"></a>假如Controller太臃肿，如何优化?</h4><ol>
+<li><p>将网络请求抽象到单独的类中 方便在基类中处理公共逻辑； 方便在基类中处理缓存逻辑，以及其它一些公共逻辑； 方便做对象的持久化。 </p>
 </li>
-</ul>
+<li><p>将界面的封装抽象到专门的类中 构造专门的 UIView 的子类，来负责这些控件的拼装。这是最彻底和优雅的方式，不过稍微麻烦一些的是，你需要把这些控件的事件回调先接管，再都一一暴露回 Controller。 </p>
 </li>
+<li><p>构造 ViewModel 借鉴MVVM。具体做法就是将 ViewController 给 View 传递数据这个过程，抽象成构造 ViewModel 的过程。 </p>
+</li>
+<li><p>专门构造存储类 专门来处理本地数据的存取。 </p>
+</li>
+<li><p>整合常量</p>
+</li>
+</ol>
+<h4 id="项目中网络层如何做安全处理"><a href="#项目中网络层如何做安全处理" class="headerlink" title="项目中网络层如何做安全处理?"></a>项目中网络层如何做安全处理?</h4><ol>
+<li>判断API的调用请求是否来自于经过授权的APP。如若不是则拒绝请求访问 </li>
+<li>在数据请求的过程中进行URL加密处理：防止反编译，接口信息被静态分析。 </li>
+<li>数据传输加密：对客户端传输数据提供有效的加密方案，以防止网络接口的拦截。 如果可以尽量使用HTTPS，可以有效的避免接口数据在传输中被攻击。</li>
 </ol>
 ]]></content>
       <categories>
-        <category>iOS</category>
+        <category>iOS面试汇总</category>
       </categories>
   </entry>
   <entry>
@@ -1087,6 +1112,44 @@
 <p>13.3、 Weex</p>
 <h3 id="十四、加分项（不会也没事，会就更好）"><a href="#十四、加分项（不会也没事，会就更好）" class="headerlink" title="十四、加分项（不会也没事，会就更好）"></a>十四、加分项（不会也没事，会就更好）</h3><p>14.1、OpenGL ES</p>
 <p>14.2、逆向</p>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>load和initialize方法的区别</title>
+    <url>/2020/05/12/load%E5%92%8Cinitialize%E6%96%B9%E6%B3%95%E7%9A%84%E5%8C%BA%E5%88%AB/</url>
+    <content><![CDATA[<h4 id="调用方式"><a href="#调用方式" class="headerlink" title="调用方式"></a>调用方式</h4><p>1、load是根据函数地址直接调用</p>
+<p>2、initialize是通过objc_msgSeng调用</p>
+<h4 id="调用时刻"><a href="#调用时刻" class="headerlink" title="调用时刻"></a>调用时刻</h4><p>1、load是runtime加载类、分类的时候调用(只会调用一次)</p>
+<p>2、initialize是类第一次接收到消息的时候调用, 每一个类只会initialize一次(如果子类没有实现initialize方法, 会调用父类的initialize方法, 所以父类的initialize方法可能会调用多次)</p>
+<h4 id="load和initializee的调用顺序"><a href="#load和initializee的调用顺序" class="headerlink" title="load和initializee的调用顺序"></a>load和initializee的调用顺序</h4><p><strong>load</strong></p>
+<p>1、先调用类的load</p>
+<ul>
+<li><p>先编译的类, 优先调用load（先编译，先调用）</p>
+</li>
+<li><p>调用子类的load之前, 会先调用父类的load</p>
+</li>
+</ul>
+<p>2、再调用分类的load</p>
+<ul>
+<li>先编译的分类, 优先调用load（先编译，先调用）</li>
+</ul>
+<p><strong>initialize</strong></p>
+<p>先调用父类的+initialize，再调用子类的+initialize。（先初始化父类，再初始化子类，每个类只会初始化1次）<br>如果分类实现了+initialize，会覆盖原有类的+initialize</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ol>
+<li><p>+initialize和+load的最大区别是</p>
+<ul>
+<li><p>initialize是通过objc_msgSeng调用，load是根据函数地址直接调用；</p>
+</li>
+<li><p>如果子类没有实现initialize方法, 会调用父类的initialize方法, 所以父类的initialize方法可能会调用多次</p>
+</li>
+<li><p>如果分类实现了+initialize，会覆盖原有类的+initialize</p>
+</li>
+</ul>
+</li>
+</ol>
 ]]></content>
       <categories>
         <category>iOS</category>
