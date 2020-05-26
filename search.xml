@@ -340,6 +340,188 @@
       </categories>
   </entry>
   <entry>
+    <title>FMDB使用分析</title>
+    <url>/2020/05/12/FMDB%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/</url>
+    <content><![CDATA[<h3 id="一、基本介绍"><a href="#一、基本介绍" class="headerlink" title="一、基本介绍"></a>一、基本介绍</h3><ul>
+<li>什么是FMDB  </li>
+</ul>
+<p>– FMDB是iOS平台的SQLite数据库框架<br>– FMDB以OC的方式封装了SQLite的C语言API</p>
+<ul>
+<li>FMDB常用类：  </li>
+</ul>
+<p>– <strong>FMDatabase</strong>：一个FMDatabase对象就代表一个单独的SQLite数据库用来执行SQL语句<br>– <strong>FMResultSet</strong>：使用FMDatabase执行查询后的结果集<br>– <strong>FMDatabaseQueue</strong>：用于在多线程中执行多个查询或更新，它是线程安全的  </p>
+<ul>
+<li>FMDB的优点  </li>
+</ul>
+<p>– 使用起来更加面向对象，省去了很多麻烦、冗余的C语言代码<br>– 对比苹果自带的Core Data框架，更加轻量级和灵活<br>– 提供了多线程安全的数据库操作方法，有效地防止数据混乱</p>
+<ul>
+<li>FMDB的缺点  </li>
+</ul>
+<p>– 它本身也存在一些问题，比如跨平台，因为它是用oc的语言封装的，所以<br>只能在ios开发的时候使用，如果想实现跨平台的操作，来降低开发的成本<br>和维护的成本,就需要使用比较原始的SQLite。</p>
+<h3 id="二、使用方法"><a href="#二、使用方法" class="headerlink" title="二、使用方法"></a>二、使用方法</h3><ul>
+<li><p>打开数据库<br>通过指定SQLite数据库文件路径来创建FMDatabase对象</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">FMDatabase *db = [FMDatabase databaseWithPath:path];</span><br><span class="line"><span class="keyword">if</span> (![db open]) &#123;</span><br><span class="line">  <span class="built_in">NSLog</span>(<span class="string">@"数据库打开失败！"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关于文件路径的三种情况：</p>
+<blockquote>
+<p>1.具体的文件路径,或是数据库的文件不存在时,fmdb会自己创建一个。<br>2.若文件路径为空字符串@””，会在临时目录创建一个空的数据库。<br>并且，当(FMDatabase)数据库断开连接时，数据库文件被删除。<br>3.若你传入的参数为NULL，则它会建立一个在内存中的数据库，数据库断开连接时，数据库文件被删除。  </p>
+</blockquote>
+</li>
+<li><p>执行更新：<br>在FMDB中,除查询以外的所有操作,都称为“更新”如：create、drop、insert、update、delete等。<br>FMDB数据库操作使用 executeUpdate: 方法执行更新,返回BOOL型。 </p>
+</li>
+</ul>
+<p>executeUpdate:用法  </p>
+<blockquote>
+<p>-(BOOL)executeUpdate:(NSString)sql, …<br>-(BOOL)executeUpdateWithFormat:(NSString)format, …<br>-(BOOL)executeUpdate:(NSString*)sql withArgumentsInArray:(NSArray *)arguments<br>示例<br>[db executeUpdate:@”UPDATE t_student SET age = ? WHERE name = ?;”, @20, @”Jack”]</p>
+</blockquote>
+<ul>
+<li>执行查询<br>查询方法<blockquote>
+<p>-(FMResultSet )executeQuery: (NSString)sql, …<br>-(FMResultSet )executeQueryWithFormat:(NSString)format, …<br>-(FMResultSet *)executeQuery:(NSString *)sql withArgumentsInArray:(NSArray *)arguments  </p>
+</blockquote>
+</li>
+</ul>
+<p>示例</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 查询数据</span></span><br><span class="line">FMResultSet *rs = [db executeQuery:<span class="string">@"SELECT * FROM t_student"</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 遍历结果集</span></span><br><span class="line"><span class="keyword">while</span> ([rs next]) &#123; </span><br><span class="line">  <span class="built_in">NSString</span> *name = [rs stringForColumn:<span class="string">@"name"</span>];</span><br><span class="line">  <span class="keyword">int</span> age = [rs intForColumn:<span class="string">@"age"</span>];</span><br><span class="line">  <span class="keyword">double</span> score = [rs doubleForColumn:<span class="string">@"score"</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>FMDatabaseQueue</li>
+</ul>
+<p>注意：  </p>
+<blockquote>
+<p>FMDatabase这个类是线程不安全的，如果在多个线程中同时使用一个<br>FMDatabase实例，会造成数据混乱等问题<br>为了保证线程安全，FMDB提供方便快捷的FMDatabaseQueue<br>FMDatabaseQueue的创建<br>FMDatabaseQueue *queue = [FMDatabaseQueue databaseQueueWithPath:path];</p>
+</blockquote>
+<p>简单使用</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">[queue inDatabase:^(FMDatabase *db) &#123; </span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jack"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Rose"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jim"</span>];</span><br><span class="line">  FMResultSet *rs = [db executeQuery:<span class="string">@"select * from t_student"</span>];</span><br><span class="line">  <span class="keyword">while</span> ([rs next]) &#123;</span><br><span class="line">    <span class="comment">// …</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
+<p>使用事务</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">[queue inTransaction:^(FMDatabase *db, <span class="built_in">BOOL</span> *rollback) &#123;</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jack"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Rose"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jim"</span>];</span><br><span class="line">  FMResultSet *rs = [db executeQuery:<span class="string">@"select * from t_student"</span>];</span><br><span class="line">  <span class="keyword">while</span> ([rs next]) &#123;</span><br><span class="line">    <span class="comment">// …</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
+<h3 id="三、数据库迁移"><a href="#三、数据库迁移" class="headerlink" title="三、数据库迁移"></a>三、数据库迁移</h3><p>使用FMDB与FMDBMigrationManager结合 进行数据库版本的升级  </p>
+<p>具体可以查看下面博客<br>iOS的数据库升级FMDBMigrationManager:<a href="https://www.jianshu.com/p/66bc680c4360" target="_blank" rel="noopener">https://www.jianshu.com/p/66bc680c4360</a><br>iOS 使用FMDB与FMDBMigrationManager结合 进行数据库版本的升级:<a href="https://blog.csdn.net/u014305730/article/details/82385126" target="_blank" rel="noopener">https://blog.csdn.net/u014305730/article/details/82385126</a>  </p>
+<h3 id="四、数据库加密"><a href="#四、数据库加密" class="headerlink" title="四、数据库加密"></a>四、数据库加密</h3><p>数据库加密一般有两种方式</p>
+<p>1、对所有数据进行加密  </p>
+<p>2、对数据库文件加密</p>
+<p>对比以上两种方式，第一种方式的常见做法是是将要存储的内容先加密然后存到数据库中，使用的时候将数据库解密，但是这样会消耗很多时间，大部分性能消耗在数据的加解密上，同时，第二种方式，SQLite本身支持加密功能(免费版的不支持) ，SQLCipher是一个开源的SQLite加密扩展，支持对db文件进行256位的AES加密，通常我们会用FMDB这个工具库，FMDB对原生的SQLite进行了封装，提供了面向对象的方式对数据库操作，同时FMDB 也提供了对 SQLCipher 的支持。（在github上集成fmdb上可以看到pod ’fmdb/sqlCipher‘）  </p>
+<p>FMDB数据库加密:<a href="https://www.jianshu.com/p/0c38bf93dcc0" target="_blank" rel="noopener">https://www.jianshu.com/p/0c38bf93dcc0</a></p>
+<h3 id="五、示例代码"><a href="#五、示例代码" class="headerlink" title="五、示例代码"></a>五、示例代码</h3><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="built_in">BOOL</span>)openDB &#123;</span><br><span class="line">    <span class="built_in">NSString</span> *path = [<span class="built_in">NSSearchPathForDirectoriesInDomains</span>(<span class="built_in">NSDocumentDirectory</span>, <span class="built_in">NSUserDomainMask</span>, <span class="literal">YES</span>).lastObject stringByAppendingPathComponent:<span class="string">@"database.sqlite"</span>];</span><br><span class="line">    FMDatabase *db = [FMDatabase databaseWithPath:path];</span><br><span class="line">    _db = db;</span><br><span class="line">    <span class="keyword">if</span> ([db open]) &#123;</span><br><span class="line">        <span class="built_in">BOOL</span> result = [db executeUpdate:<span class="string">@"CREATE TABLE IF NOT EXISTS t_student (id integer PRIMARY KEY AUTOINCREMENT, name text NOT NULL, age integer NOT NULL);"</span>];</span><br><span class="line">        <span class="keyword">if</span> (result) &#123;</span><br><span class="line">            <span class="built_in">NSLog</span>(<span class="string">@"表创建成功"</span>);</span><br><span class="line">            [db close];</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">NSLog</span>(<span class="string">@"表创建失败"</span>);</span><br><span class="line">             [db close];</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">NSLog</span>(<span class="string">@"打开失败"</span>);</span><br><span class="line">         [db close];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)add &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"INSERT INTO t_student (name, age) VALUES (?,?);"</span>, <span class="string">@"tom"</span>, @(arc4random_uniform(<span class="number">40</span>))];</span><br><span class="line">        <span class="comment">//    [self.db executeUpdate:@"INSERT INTO t_student (name, age) VALUES (?,?);" withArgumentsInArray:@[@"tom",@(arc4random_uniform(40))]];</span></span><br><span class="line">        <span class="comment">//    [self.db executeUpdateWithFormat:@"INSERT INTO t_student (name, age) VALUES (%@,%d);", @"tom", @(arc4random_uniform(40))];</span></span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)deleteStudent:(<span class="built_in">NSInteger</span>)ID &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"delete from t_student where id = ?;"</span>, @(ID)];</span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)update:(Student *)s &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        s.age = s.age - <span class="number">1</span>;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"update t_student set age = ? where id = ?;"</span>,s.age, s.ID];</span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)query &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        FMResultSet *resultSet = [<span class="keyword">self</span>.db executeQuery:<span class="string">@"SELECT * FROM t_student;"</span>];</span><br><span class="line">        <span class="built_in">NSMutableArray</span> *tmp = [<span class="built_in">NSMutableArray</span> array];</span><br><span class="line">        <span class="keyword">while</span> ([resultSet next]) &#123;</span><br><span class="line">            <span class="keyword">int</span> ID = [resultSet intForColumn:<span class="string">@"id"</span>];</span><br><span class="line">            <span class="built_in">NSString</span> *name = [resultSet stringForColumn:<span class="string">@"name"</span>];</span><br><span class="line">            <span class="keyword">int</span> age = [resultSet intForColumn:<span class="string">@"age"</span>];</span><br><span class="line">            </span><br><span class="line">            Student *s = [[Student alloc]init];</span><br><span class="line">            s.ID = ID;</span><br><span class="line">            s.name = name;</span><br><span class="line">            s.age = age;</span><br><span class="line">            </span><br><span class="line">            [tmp addObject:s];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">self</span>.students = tmp;</span><br><span class="line">        </span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>iOS开发数据库篇—FMDB简单介绍:<a href="https://www.cnblogs.com/wendingding/p/3871848.html" target="_blank" rel="noopener">https://www.cnblogs.com/wendingding/p/3871848.html</a></p>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>NSURLSession</title>
+    <url>/2020/05/14/NSURLSession/</url>
+    <content><![CDATA[<h3 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h3><p>NSURLSession在2013年随着iOS7的发布一起面世，苹果对它的定位是作为NSURLConnection的替代者，然后逐步将NSURLConnection退出历史舞台。现在使用最广泛的第三方网络框架：AFNetworking、SDWebImage等等都使用了NSURLSession。</p>
+<p>在WWDC 2013中，Apple的团队对NSURLConnection进行了重构，并推出了NSURLSession作为替代。NSURLSession将NSURLConnection替换为<em>NSURLSession<em>和</em>NSURLSessionConfiguration<em>，以及3个NSURLSessionTask的子类：</em>NSURLSessionDataTask</em>, <em>NSURLSessionUploadTask</em>, 和<em>NSURLSessionDownloadTask</em>。</p>
+<p><img src="1.jpg" alt=""></p>
+<p>NSURLSessionTask及三个子类继承关系：</p>
+<p><img src="2.jpg" alt=""></p>
+<p><strong>NSURLSessionTask及其子类</strong></p>
+<p><strong><code>NSURLSessionTask</code>本身是一个抽象类，在使用的时候，通常是根据具体的需求使用它的几个子类</strong> </p>
+<p><strong><code>NSURLSessionDataTask</code>可以用来发送常见的Get，Post请求，既可以用来上传也可以用来下载</strong></p>
+<p> <strong><code>NSURLSessionDownloadTask</code>可以用来发送下载请求，专门用来下载数据</strong></p>
+<p> <strong><code>NSURLSessionUploadTask</code>可以用来发送上传请求，专门用来上传数据</strong></p>
+<h3 id="二、NSURLSession的使用"><a href="#二、NSURLSession的使用" class="headerlink" title="二、NSURLSession的使用"></a>二、NSURLSession的使用</h3><p>NSURLSession 本身是不会进行请求的，而是通过创建 task 的形式进行网络请求（resume() 方法的调用），同一个 NSURLSession 可以创建多个 task，并且这些 task 之间的 cache 和 cookie 是共享的。NSURLSession的使用有如下几步：</p>
+<ul>
+<li>第一步：创建NSURLSession对象</li>
+<li>第二步：使用NSURLSession对象创建Task</li>
+<li>第三步：启动任务</li>
+</ul>
+<h4 id="创建NSURLSession对象"><a href="#创建NSURLSession对象" class="headerlink" title="创建NSURLSession对象"></a>创建NSURLSession对象</h4><p>NSURLSession对象的创建有如下三种方法：</p>
+<p>（1）直接创建</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">NSURLSession *session &#x3D; [NSURLSession sharedSession];</span><br></pre></td></tr></table></figure>
+
+<p>（2）配置后创建</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">[NSURLSession sessionWithConfiguration:defaultSessionConfiguration];</span><br></pre></td></tr></table></figure>
+
+<p>（3）设置加代理获得</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; 使用代理方法需要设置代理,但是session的delegate属性是只读的,要想设置代理只能通过这种方式创建session</span><br><span class="line">NSURLSession *session &#x3D; [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]</span><br><span class="line">    delegate:self</span><br><span class="line">    delegateQueue:[[NSOperationQueue alloc] init]];</span><br></pre></td></tr></table></figure>
+
+<p>关于NSURLSession的配置有三种类型：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F;默认的配置会将缓存存储在磁盘上</span><br><span class="line">+ (NSURLSessionConfiguration *)defaultSessionConfiguration;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;瞬时会话模式不会创建持久性存储的缓存</span><br><span class="line">+ (NSURLSessionConfiguration *)ephemeralSessionConfiguration;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;后台会话模式允许程序在后台进行上传下载工作</span><br><span class="line">+ (NSURLSessionConfiguration *)backgroundSessionConfigurationWithIdentifier:(NSString *)identifier</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="使用NSURLSession对象创建Task"><a href="#使用NSURLSession对象创建Task" class="headerlink" title="使用NSURLSession对象创建Task"></a>使用NSURLSession对象创建Task</h4><p>NSURLSessionTask的创建要根据具体需要创建相应类型的Task。</p>
+<p>（1）NSURLSessionDataTask</p>
+<p>通过request对象或url创建：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request;</span><br><span class="line"></span><br><span class="line">- (NSURLSessionDataTask *)dataTaskWithURL:(NSURL *)url;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>通过request对象或url创建，同时指定任务完成后通过completionHandler指定回调的代码块：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionDataTask *)dataTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;</span><br></pre></td></tr></table></figure>
+
+<p>（2）NSURLSessionUploadTask</p>
+<p>通过request创建，在上传时指定文件源或数据源：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL;  </span><br><span class="line">   </span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData;  </span><br><span class="line">  </span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithStreamedRequest:(NSURLRequest *)request;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>通过completionHandler指定任务完成后的回调代码块：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;</span><br></pre></td></tr></table></figure>
+
+<p>（3）NSURLSessionDownloadTask</p>
+<p>下载任务支持断点续传，第三种方式是通过之前已经下载的数据来创建下载任务：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request;    </span><br><span class="line">    </span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url;    </span><br><span class="line">  </span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData;</span><br></pre></td></tr></table></figure>
+
+<p>同样地可以通过completionHandler指定任务完成后的回调代码块：</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;</span><br></pre></td></tr></table></figure>
+
+<p>我们在使用三种 task 的任意一种的时候都可以指定相应的代理。NSURLSession 的代理对象结构如下：</p>
+<p><img src="3.jpg" alt=""></p>
+<p><em>NSURLSessionDelegate</em> – 作为所有代理的基类，定义了网络请求最基础的代理方法。</p>
+<p><em>NSURLSessionTaskDelegate</em> – 定义了网络请求任务相关的代理方法。</p>
+<p><em>NSURLSessionDownloadDelegate</em> – 用于下载任务相关的代理方法，比如下载进度等等。</p>
+<p><em>NSURLSessionDataDelegate</em> – 用于普通数据任务和上传任务。</p>
+<h4 id="启动任务"><a href="#启动任务" class="headerlink" title="启动任务"></a>启动任务</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; 启动任务</span><br><span class="line">[task resume];</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="三、GET请求与POST请求"><a href="#三、GET请求与POST请求" class="headerlink" title="三、GET请求与POST请求"></a>三、GET请求与POST请求</h3><p>1、GET 请求</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F;1、创建NSURLSession对象</span><br><span class="line">NSURLSession *session &#x3D; [NSURLSession sharedSession];</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;2、利用NSURLSession创建任务(task)</span><br><span class="line">NSURL *url &#x3D; [NSURL URLWithString:@&quot;http:&#x2F;&#x2F;www.xxx.com&#x2F;login?username&#x3D;myName&amp;pwd&#x3D;myPsd&quot;];</span><br><span class="line"></span><br><span class="line">NSURLSessionDataTask *task &#x3D; [session dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) &#123;</span><br><span class="line">    </span><br><span class="line">    NSLog(@&quot;%@&quot;,[[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding]);</span><br><span class="line">    &#x2F;&#x2F;打印解析后的json数据</span><br><span class="line">    &#x2F;&#x2F;NSLog(@&quot;%@&quot;, [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil]);</span><br><span class="line"></span><br><span class="line">&#125;];</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;3、执行任务</span><br><span class="line">[task resume];</span><br></pre></td></tr></table></figure>
+
+<p>2、POST请求</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F;1、创建NSURLSession对象</span><br><span class="line">NSURLSession *session &#x3D; [NSURLSession sharedSession];</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;2、利用NSURLSession创建任务(task)</span><br><span class="line">NSURL *url &#x3D; [NSURL URLWithString:@&quot;http:&#x2F;&#x2F;www.xxx.com&#x2F;login&quot;];</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;创建请求对象里面包含请求体</span><br><span class="line">NSMutableURLRequest *request &#x3D; [NSMutableURLRequest requestWithURL:url];</span><br><span class="line">request.HTTPMethod &#x3D; @&quot;POST&quot;;</span><br><span class="line">request.HTTPBody &#x3D; [@&quot;username&#x3D;myName&amp;pwd&#x3D;myPsd&quot; dataUsingEncoding:NSUTF8StringEncoding];</span><br><span class="line"></span><br><span class="line">NSURLSessionDataTask *task &#x3D; [session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) &#123;</span><br><span class="line">      </span><br><span class="line">    NSLog(@&quot;%@&quot;,[[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding]);</span><br><span class="line">    &#x2F;&#x2F;打印解析后的json数据</span><br><span class="line">    &#x2F;&#x2F;NSLog(@&quot;%@&quot;, [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil]);</span><br><span class="line"></span><br><span class="line">&#125;];</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;3、执行任务</span><br><span class="line"> [task resume];</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="四、文件的上传"><a href="#四、文件的上传" class="headerlink" title="四、文件的上传"></a>四、文件的上传</h3><p>我们可以使用NSURLSessionUploadTask进行文件的上传</p>
+<p><strong>创建方法</strong>（基于 <code>NSURLSession</code> 对象）</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; 使用 NSURLRequest 对象创建，上传时指定文件源</span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL;  </span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 使用 NSURLRequest 对象创建，上传时指定数据源   </span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData;  </span><br><span class="line">  </span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithStreamedRequest:(NSURLRequest *)request;</span><br></pre></td></tr></table></figure>
+
+
+
+<p><strong>CompletionHandler</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;</span><br></pre></td></tr></table></figure>
+
+<p><strong>关于分片上传和断点续传上传</strong></p>
+<p>可以参考阿里云AliyunOSSiOS源码及文档</p>
+<p>文档地址：<a href="https://help.aliyun.com/document_detail/31850.html?spm=a2c4g.11186623.6.610.62d72201Fvv00V" target="_blank" rel="noopener">https://help.aliyun.com/document_detail/31850.html?spm=a2c4g.11186623.6.610.62d72201Fvv00V</a></p>
+<h3 id="五、文件的下载"><a href="#五、文件的下载" class="headerlink" title="五、文件的下载"></a>五、文件的下载</h3><p>我们可以使用NSURLSessionDownloadTask实现文件的下载。</p>
+<p><code>NSURLSessionDownloadTask</code> 主要用于 <strong>文件下载</strong>，它针对大文件的网络请求做了更多的处理，如：下载进度、断点续传等。</p>
+<p><strong>创建方法</strong>（基于 <code>NSURLSession</code> 对象）</p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; 使用 NSURLRequest 对象创建</span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request;    </span><br><span class="line">    </span><br><span class="line">&#x2F;&#x2F; 使用 NSURL 对象创建</span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url;    </span><br><span class="line">  </span><br><span class="line">&#x2F;&#x2F; 使用之前已经下载的数据来创建</span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData;</span><br></pre></td></tr></table></figure>
+
+
+
+<p><strong>CompletionHandler</strong></p>
+<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;</span><br></pre></td></tr></table></figure>
+
+
+
+<p><strong>关于断点续传下载</strong></p>
+<p>设计思路是用请求的Range</p>
+<p>iOS断点续传：<a href="https://cloud.tencent.com/developer/article/1423899" target="_blank" rel="noopener">https://cloud.tencent.com/developer/article/1423899</a></p>
+<p>AFNetworking 实现断点续传：<a href="http://www.yangjie.hu/2018/05/15/breakpoint-resume-in-iOS/" target="_blank" rel="noopener">http://www.yangjie.hu/2018/05/15/breakpoint-resume-in-iOS/</a></p>
+<h3 id="六、补充"><a href="#六、补充" class="headerlink" title="六、补充"></a>六、补充</h3><p>iOS 利用AFNetworking实现大文件分片上传</p>
+<p><a href="https://www.jianshu.com/p/7919c620967e" target="_blank" rel="noopener">https://www.jianshu.com/p/7919c620967e</a></p>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>NSURLSession：<a href="https://www.jianshu.com/p/e798c6fe26ea" target="_blank" rel="noopener">https://www.jianshu.com/p/e798c6fe26ea</a></p>
+<p>iOS 网络(1)——NSURLSession: <a href="http://chuquan.me/2019/07/21/ios-network-nsurlsession/" target="_blank" rel="noopener">http://chuquan.me/2019/07/21/ios-network-nsurlsession/</a></p>
+<p>iOS NSURLSession 详解：<a href="https://juejin.im/entry/58aacabcac502e006973ce03" target="_blank" rel="noopener">https://juejin.im/entry/58aacabcac502e006973ce03</a></p>
+]]></content>
+  </entry>
+  <entry>
     <title>Mach-O文件分析</title>
     <url>/2020/05/22/Mach-O%E6%96%87%E4%BB%B6%E5%88%86%E6%9E%90/</url>
     <content><![CDATA[<h3 id="Mach-O文件"><a href="#Mach-O文件" class="headerlink" title="Mach-O文件"></a>Mach-O文件</h3><p><code>Mach-O</code> 其实是 <code>Mach Object</code> 文件格式的缩写，是 <code>mac</code> 以及 <code>iOS</code> 上可执行文件的格式， 类似于 <code>windows</code> 上的 <code>PE</code> 格式 ( Portable Executable ) , <code>linux</code> 上的 <code>elf</code> 格式 ( Executable and Linking Format )  .</p>
@@ -375,10 +557,257 @@
       </categories>
   </entry>
   <entry>
-    <title>iOS面试题收录（三）</title>
-    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%89%EF%BC%89/</url>
-    <content><![CDATA[<p>主题：高级问题</p>
+    <title>iOS面试题收录（二）</title>
+    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
+    <content><![CDATA[<p>主题：怎么做？</p>
+<h4 id="设计模式是什么？-你知道哪些设计模式，并简要叙述？"><a href="#设计模式是什么？-你知道哪些设计模式，并简要叙述？" class="headerlink" title="设计模式是什么？ 你知道哪些设计模式，并简要叙述？"></a>设计模式是什么？ 你知道哪些设计模式，并简要叙述？</h4><p><strong>设计模式</strong>是一套被 反复使用、多数人知晓、经过分类编目的、代码设计经验的总结。</p>
+<p><strong>单例模式：</strong>单例模式确保某一个类只有一个实例，并提供一个访问它的全剧访问点。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F4a1dYXPf1oSfZYS7J1IQRA" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>工厂模式：</strong>工厂父类负责定义创建产品对象的公共接口，而工厂子类则负责生产具体的产品对象，即通过不停的工厂子类来创建不同的产品对象。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fjuejin.im%2Fpost%2F5bcb0362e51d450e7042eb6d" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>代理模式 :</strong>为某个对象提供一个代理，并由这个代理对象控制对原对象的访问。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F22eVsnQP2cTccWwIaLfz5g" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>适配器模式：</strong> 将一个接口转换成客户希望的另一个接口，使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。适配器模式的别名是包装器模式（Wrapper），是一种结构型设计模式。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F3abKTDIVy8BJJjThr2jgMQ" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>装饰者模式：</strong> 不改变原有对象的前提下，动态地给一个对象增加一些额外的功能。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FkoaeYH1U-nfrsSQ8FH3hhQ" target="_blank" rel="noopener">具体的详情可点击进入查看</a></p>
+<h4 id="MVC-和-MVVM-的区别？"><a href="#MVC-和-MVVM-的区别？" class="headerlink" title="MVC 和 MVVM 的区别？"></a>MVC 和 MVVM 的区别？</h4><p><strong>MVC</strong><br>MVC（Model-View-Controller）模式结构图，可分为三部分：模型（Model）、视图（View）、控制器（Controller）。其在MVC模式中所扮演的角色分别为：<br>Model：模型管理应用程序的数据，响应有关其状态信息（通常来自View）的请求，并响应指令以更改状态（通常来自Controller）。<br>View：视图管理数据的展示。<br>Controller：控制器解释用户的输入，并通知模型、视图进行状态更新<br>所有通信都是单向的。<br>优点：对Controller进行瘦身，将View内部的细节封装起来了，外界不知道View内部的具体实现<br>缺点：View和Controller依赖于Model</p>
+<p><strong>MVVM</strong><br>MVVM（Model View View-Model）就是为了解决过于臃肿的问题。MVVM的思想是将Controller中UI控制逻辑与业务逻辑进行分离，并抽离出一个View-Model来完成UI控制的逻辑。而Controller只需要负责业务逻辑即可</p>
+<p>唯一的区别是，View-Model可以调用Model定义的方法，从Model中获取数据以用于View，并对数据进行预处理，使View可以直接使用。View又可以向View-Model发出用户的操作命令，从而更改Model。MVVM实现了一种双向绑定机制。</p>
+<p>优点：降低了View和Model之间的耦合；分离了业务逻辑和视图逻辑。<br>缺点：View和Model双向绑定导致bug难以定位，两者中的任何一方出现问题，另一方也会出现问题；增加了胶水代码</p>
+<h4 id="iOS-内存的使用和优化的注意事项"><a href="#iOS-内存的使用和优化的注意事项" class="headerlink" title="iOS 内存的使用和优化的注意事项?"></a>iOS 内存的使用和优化的注意事项?</h4><p><strong>重用问题：</strong>如<code>UITableViewCells</code>、<code>UICollectionViewCells</code>、<code>UITableViewHeaderFooterViews</code>。设置正确的<code>reuseIdentifier</code>，充分重用<br><strong>不要使用太复杂的XIB/Storyboard：</strong>载入时就会将<code>XIB</code>/<code>storyboard</code>需要的所有资源，包括图片全部载入内存。<br><strong>尽量把views设置为不透明：</strong>当opque为NO的时候，图层的半透明取决于图片和其本身合成的图层为结果，可提高性能<br><strong>选择正确的数据结构：</strong>学会选择对业务场景最合适的数组结构是写出高效代码的基础。<br><strong>gzip/zip压缩：</strong>当从服务端下载相关附件时，可以通过gzip/zip压缩后再下载，使得内存更小，下载速度也更快。<br><strong>延迟加载：</strong>对于不应该使用的数据，使用延迟加载方式。对于不需要马上显示的视图，使用延迟加载方式。比如，网络请求失败时显示的提示界面，可能一直都不会使用到，因此应该使用延迟加载。<br><strong>数据缓存：</strong>对于cell的行高要缓存起来，使得reload数据时，效率也极高。<br>而对于那些网络数据，不需要每次都请求的，应该缓存起来。可以写入数据库，也可以通过plist文件存储<br><strong>处理内存警告：</strong>一般在基类统一处理内存警告，将相关不用资源立即释放掉</p>
+<h4 id="iOS-你在项目中是怎么优化内存的？"><a href="#iOS-你在项目中是怎么优化内存的？" class="headerlink" title="iOS 你在项目中是怎么优化内存的？"></a>iOS 你在项目中是怎么优化内存的？</h4><blockquote>
+<p>这个问题有时候笔试中也有，有时候有些面试官会在面试中问你这个问题</p>
+</blockquote>
+<p>1&gt;.避免庞大的Xib(Xib比frame消耗更多的CPU资源)<br>2&gt;.不要阻塞主线程，尽量把耗时的操作放到子线程<br>3&gt;.重用和延迟加载<br>4&gt;.尽量减少视图数量和层次<br>5&gt;.优化TableView,为了使TableVIew有更好的滚动性能可采取以下措施：</p>
+<ul>
+<li>正确使用ruseIdentifier来重用cells</li>
+<li>采用懒加载即延迟加载的方式加载cell上的控件</li>
+<li>当TableView滑动的时候不加载</li>
+<li>缓存cell的高度。在呈现cell前，把cell的高度计算好缓存起来，避免每次加载cell的时候都要计算</li>
+<li>尽量使用不透明的UI控件</li>
+</ul>
+<h4 id="写一个完整的代理，包括声明、实现"><a href="#写一个完整的代理，包括声明、实现" class="headerlink" title="写一个完整的代理，包括声明、实现"></a>写一个完整的代理，包括声明、实现</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 创建</span></span><br><span class="line"><span class="class"><span class="keyword">@protocol</span> <span class="title">PersonDelagate</span></span></span><br><span class="line"><span class="keyword">@required</span></span><br><span class="line">-(<span class="keyword">void</span>)eat:(<span class="built_in">NSString</span> *)foodName;</span><br><span class="line"><span class="keyword">@optional</span></span><br><span class="line">-(<span class="keyword">void</span>)run;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 声明 .h</span></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">Person</span>: <span class="title">NSObject</span>&lt;<span class="title">PersonDelagate</span>&gt;</span></span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现 .m</span></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">Person</span></span></span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)eat:(<span class="built_in">NSString</span> *)foodName &#123;</span><br><span class="line"><span class="built_in">NSLog</span>(<span class="string">@"吃:%@"</span>, foodName);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)run &#123;</span><br><span class="line">   <span class="built_in">NSLog</span>(<span class="string">@"run"</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="分析json、xml-的区别-json、xml-解析-式的底层是如何让处理的"><a href="#分析json、xml-的区别-json、xml-解析-式的底层是如何让处理的" class="headerlink" title="分析json、xml 的区别? json、xml 解析 式的底层是如何让处理的"></a>分析json、xml 的区别? json、xml 解析 式的底层是如何让处理的</h4><p>(一) JSON与XML的区别： </p>
+<p>（1）可读性方面：基本相同，XML的可读性比较好； </p>
+<p>（2）可扩展性方面：都具有良好的扩展性； </p>
+<p>（3）编码难度方面：相对而言，JSON的编码比较容易； </p>
+<p>（4）解码难度：JSON的解码难度基本为零，XML需要考虑子节点和父节点；</p>
+<p>（5）数据体积方面：JSON相对于XML来讲，数据体积小，传递的速度比较快； </p>
+<p>（6）数据交互方面：JSON与javascript的交互更加方便，更容易解析处理，更好的数据交互； </p>
+<p>（7）数据描述方面：XML对数据描述性比较好 </p>
+<p>（8）传输速度方面：JSON的速度远远快于XML。 </p>
+<p>(二）JSON与XML底层实现原理： 　</p>
+<p>（1）JSON底层原理：遍历字符串中的字符，最终根据格式规定的特殊字符，比如{}、[]、：等进行区分，{}号表示字典，[]号表示数组，：号是字典的键和值的分水岭，最终仍是将JSON转化为字典，只不过字典中的值可能是“字典、数组或者字符串而已”。 　　</p>
+<p>（2）XML底层原理：XML解析常用的解析方法有两种：DOM解析和SAX解析；DOM采用的是树形结构的方式访问XML文档，而SAX采用的是事件模型；DOM解析把XML文档转化为一个包含其内容的树，并可以对树进行遍历，使用DOM解析器的时候需要处理整个XML文档，所以对内存和性能的要求比较高；SAX在解析XML文档的时候可以触发一系列的事件，当发现给定的tag的时候，他可以激活一个回调方法，告诉该方法指定的标签已经找到，SAX对内存的要求通常会比较低，因为他让开发人员自己来决定所要处理的tag，特别是当开发人员只需要处理文档中所包含部分数据时，SAX这种扩展能力得到了更好的体现。</p>
+<h4 id="如何处理UITableVier-中Cell-动态计算高度的问题，都有哪些方案"><a href="#如何处理UITableVier-中Cell-动态计算高度的问题，都有哪些方案" class="headerlink" title="如何处理UITableVier 中Cell 动态计算高度的问题，都有哪些方案?"></a>如何处理UITableVier 中Cell 动态计算高度的问题，都有哪些方案?</h4><ol>
+<li><p>你的Cell要使用AutoLayout来布局约束这是必须的； 设置tableview的estimatedRowHeight为一个非零值，这个属性是设置一个预估的高度值，不用太精确。 设置tableview的rowHeight属性为UITableViewAutomaticDimension</p>
+</li>
+<li><p>第三方 UITableView+FDTemplateLayoutCell</p>
+</li>
+</ol>
+<h4 id="怎么高效的实现控件的圆角效果"><a href="#怎么高效的实现控件的圆角效果" class="headerlink" title="怎么高效的实现控件的圆角效果"></a>怎么高效的实现控件的圆角效果</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">//绘制圆角 </span></span><br><span class="line">-(<span class="built_in">UIImageView</span> *)roundedRectImageViewWithCornerRadius:(<span class="built_in">CGFloat</span>)cornerRadius &#123; </span><br><span class="line">  <span class="built_in">UIBezierPath</span> *bezierPath = [<span class="built_in">UIBezierPath</span> bezierPathWithRoundedRect:<span class="keyword">self</span>.bounds 		cornerRadius:cornerRadius]; </span><br><span class="line">  <span class="built_in">CAShapeLayer</span> *layer = [<span class="built_in">CAShapeLayer</span> layer]; </span><br><span class="line">  layer.path = bezierPath.CGPath; </span><br><span class="line">  <span class="keyword">self</span>.layer.mask = layer; </span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">self</span>; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="假如Controller太臃肿，如何优化"><a href="#假如Controller太臃肿，如何优化" class="headerlink" title="假如Controller太臃肿，如何优化?"></a>假如Controller太臃肿，如何优化?</h4><ol>
+<li><p>将网络请求抽象到单独的类中 方便在基类中处理公共逻辑； 方便在基类中处理缓存逻辑，以及其它一些公共逻辑； 方便做对象的持久化。 </p>
+</li>
+<li><p>将界面的封装抽象到专门的类中 构造专门的 UIView 的子类，来负责这些控件的拼装。这是最彻底和优雅的方式，不过稍微麻烦一些的是，你需要把这些控件的事件回调先接管，再都一一暴露回 Controller。 </p>
+</li>
+<li><p>构造 ViewModel 借鉴MVVM。具体做法就是将 ViewController 给 View 传递数据这个过程，抽象成构造 ViewModel 的过程。 </p>
+</li>
+<li><p>专门构造存储类 专门来处理本地数据的存取。 </p>
+</li>
+<li><p>整合常量</p>
+</li>
+</ol>
+<h4 id="项目中网络层如何做安全处理"><a href="#项目中网络层如何做安全处理" class="headerlink" title="项目中网络层如何做安全处理?"></a>项目中网络层如何做安全处理?</h4><ol>
+<li>判断API的调用请求是否来自于经过授权的APP。如若不是则拒绝请求访问 </li>
+<li>在数据请求的过程中进行URL加密处理：防止反编译，接口信息被静态分析。 </li>
+<li>数据传输加密：对客户端传输数据提供有效的加密方案，以防止网络接口的拦截。 如果可以尽量使用HTTPS，可以有效的避免接口数据在传输中被攻击。</li>
+</ol>
 ]]></content>
+      <categories>
+        <category>iOS面试汇总</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>iOS高级必备知识</title>
+    <url>/2020/05/08/iOS%E9%AB%98%E7%BA%A7%E5%BF%85%E5%A4%87%E7%9F%A5%E8%AF%86/</url>
+    <content><![CDATA[<h3 id="一、UI视图"><a href="#一、UI视图" class="headerlink" title="一、UI视图"></a>一、UI视图</h3><p>1.1 、事件传递机制</p>
+<p>1.2 、UI绘制原理</p>
+<p>1.3 、异步绘制原理</p>
+<p>1.4 、流失页面的性能优化</p>
+<p>1.5 、离屏渲染</p>
+<h3 id="二、OC语言"><a href="#二、OC语言" class="headerlink" title="二、OC语言"></a>二、OC语言</h3><p>2.1 、KVO</p>
+<p>2.2、 KVC</p>
+<p>2.3、分类</p>
+<p>2.4、 关联对象</p>
+<h3 id="三、Runtime"><a href="#三、Runtime" class="headerlink" title="三、Runtime"></a>三、Runtime</h3><p>3.1、 对象、类、元祖对象</p>
+<p>3.2、 消息传递机制</p>
+<p>3.3、消息转发流程</p>
+<p>3.4、Method-Swizzing</p>
+<h3 id="四、内存"><a href="#四、内存" class="headerlink" title="四、内存"></a>四、内存</h3><p>4.1、 引用计数表</p>
+<p>4.2、 弱引用表</p>
+<p>4.3、 ARC，MRC</p>
+<p>4.4、 循环引用</p>
+<p>4.5、 内存管理</p>
+<h3 id="五、Block"><a href="#五、Block" class="headerlink" title="五、Block"></a>五、Block</h3><p>5.1、 Block本质</p>
+<p>5.2、 截获变量特性</p>
+<p>5.3、 内存管理</p>
+<p>5.4、 循环应用</p>
+<h3 id="六、多线程"><a href="#六、多线程" class="headerlink" title="六、多线程"></a>六、多线程</h3><p>6.1、 GCD，NSoperation</p>
+<p>6.2、 资源共享</p>
+<p>6.3、 线程同步</p>
+<p>6.4、 SpinLock</p>
+<h3 id="七、RunLoop"><a href="#七、RunLoop" class="headerlink" title="七、RunLoop"></a>七、RunLoop</h3><p>7.1、 事件循环</p>
+<p>7.2、 常驻线程</p>
+<h3 id="八、网络"><a href="#八、网络" class="headerlink" title="八、网络"></a>八、网络</h3><p>8.1、 HTTPS</p>
+<p>8.2、 对称加密算法</p>
+<p>8.3、 非对称加密算法</p>
+<p>8.4、 DNS解析</p>
+<p>8.5 HTTP，TCP</p>
+<h3 id="九、设计模式"><a href="#九、设计模式" class="headerlink" title="九、设计模式"></a>九、设计模式</h3><p>9.1、 桥接，适配器，命令</p>
+<p>9.2、 责任链，单例</p>
+<p>9.3、 六大设计原则</p>
+<h3 id="十、架构-框架"><a href="#十、架构-框架" class="headerlink" title="十、架构/框架"></a>十、架构/框架</h3><p>10.1、 MVVM，时长统计框架</p>
+<p>10.2、 图片缓存框架</p>
+<p>10.3、 PV量级10亿业务架构</p>
+<h3 id="十一、算法"><a href="#十一、算法" class="headerlink" title="十一、算法"></a>十一、算法</h3><p>11.1、 字符串反转</p>
+<p>11.2、 单链表反转</p>
+<p>11.3、 有序数组递归</p>
+<p>11.4、 无序数组找中位</p>
+<h3 id="十二、第三方库"><a href="#十二、第三方库" class="headerlink" title="十二、第三方库"></a>十二、第三方库</h3><p>12.1、 AFNETworking<br><strong>…</strong></p>
+<h3 id="十三、跨平台-最少会其一"><a href="#十三、跨平台-最少会其一" class="headerlink" title="十三、跨平台(最少会其一)"></a>十三、跨平台(最少会其一)</h3><p>13.1、 RN</p>
+<p>13.2、 Flutter</p>
+<p>13.3、 Weex</p>
+<h3 id="十四、加分项（不会也没事，会就更好）"><a href="#十四、加分项（不会也没事，会就更好）" class="headerlink" title="十四、加分项（不会也没事，会就更好）"></a>十四、加分项（不会也没事，会就更好）</h3><p>14.1、OpenGL ES</p>
+<p>14.2、逆向</p>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>load和initialize方法的区别</title>
+    <url>/2020/05/12/load%E5%92%8Cinitialize%E6%96%B9%E6%B3%95%E7%9A%84%E5%8C%BA%E5%88%AB/</url>
+    <content><![CDATA[<h4 id="调用方式"><a href="#调用方式" class="headerlink" title="调用方式"></a>调用方式</h4><p>1、load是根据函数地址直接调用</p>
+<p>2、initialize是通过objc_msgSeng调用</p>
+<h4 id="调用时刻"><a href="#调用时刻" class="headerlink" title="调用时刻"></a>调用时刻</h4><p>1、load是runtime加载类、分类的时候调用(只会调用一次)</p>
+<p>2、initialize是类第一次接收到消息的时候调用, 每一个类只会initialize一次(如果子类没有实现initialize方法, 会调用父类的initialize方法, 所以父类的initialize方法可能会调用多次)</p>
+<h4 id="load和initializee的调用顺序"><a href="#load和initializee的调用顺序" class="headerlink" title="load和initializee的调用顺序"></a>load和initializee的调用顺序</h4><p><strong>load</strong></p>
+<p>1、先调用类的load</p>
+<ul>
+<li><p>先编译的类, 优先调用load（先编译，先调用）</p>
+</li>
+<li><p>调用子类的load之前, 会先调用父类的load</p>
+</li>
+</ul>
+<p>2、再调用分类的load</p>
+<ul>
+<li>先编译的分类, 优先调用load（先编译，先调用）</li>
+</ul>
+<p><strong>initialize</strong></p>
+<p>先调用父类的+initialize，再调用子类的+initialize。（先初始化父类，再初始化子类，每个类只会初始化1次）<br>如果分类实现了+initialize，会覆盖原有类的+initialize</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ol>
+<li><p>+initialize和+load的最大区别是</p>
+<ul>
+<li><p>initialize是通过objc_msgSeng调用，load是根据函数地址直接调用；</p>
+</li>
+<li><p>如果子类没有实现initialize方法, 会调用父类的initialize方法, 所以父类的initialize方法可能会调用多次</p>
+</li>
+<li><p>如果分类实现了+initialize，会覆盖原有类的+initialize</p>
+</li>
+</ul>
+</li>
+</ol>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>图像显示原理</title>
+    <url>/2020/05/22/%E5%9B%BE%E5%83%8F%E6%98%BE%E7%A4%BA%E5%8E%9F%E7%90%86/</url>
+    <content><![CDATA[<p><img src="1.png" alt=""></p>
+<p>CPU和GPU做了哪些事：</p>
+<p><img src="2.png" alt=""></p>
+<p>CPU的主要工作如下：</p>
+<p>​    1）、Layout过程：主要是UI布局、文本计算</p>
+<p>​    2）、Display过程：主要是绘制过程，比如drawrect方法就是在该过程调用</p>
+<p>​    3）、Prepare过程：比如对视图中图片的解码</p>
+<p>​    4）、Commit过程：将生成的位图提交到GPU</p>
+<p>GPU渲染管线(即OpenGL渲染管线)步骤：</p>
+<p>​    1）、顶点着色</p>
+<p>​    2）、图元装配</p>
+<p>​    3）、光栅化</p>
+<p>​    4）、片段着色</p>
+<p>​    5）、片段处理</p>
+<p>​    6）、将处理好的位图提交到帧缓冲区FrameBuffer中</p>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>图像绘制原理</title>
+    <url>/2020/05/12/%E5%9B%BE%E5%83%8F%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86/</url>
+    <content><![CDATA[<p><img src="draw_1.png" alt=""></p>
+<ul>
+<li><p><a href="">CoreAnimation</a></p>
+</li>
+<li><p><a href="">CoreGraphics</a>    </p>
+</li>
+<li><p><a href="">OpenGL ES</a> </p>
+</li>
+</ul>
+<h3 id="CoreAnimation"><a href="#CoreAnimation" class="headerlink" title="CoreAnimation"></a>CoreAnimation</h3><p>打开<code>QuartzCore</code>的头文件可以看到,<code>QuartzCore</code>就是引用了<code>CoreAnimation</code>的头文件，所以这两个实际上是同一个，是雌雄同体。。。。<br><code>CoreAnimation</code>中文名核心动画，看名字是负责动画的，其实不然，作用相当大，来看看他的头文件</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> COREANIMATION_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COREANIMATION_H</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QuartzCore/CABase.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QuartzCore/CATransform3D.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __OBJC__</span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;Foundation/Foundation.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAAnimation.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CADisplayLink.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEAGLLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterBehavior.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterCell.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAGradientLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CALayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAMediaTiming.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAMediaTimingFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAReplicatorLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAScrollLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAShapeLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATextLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATiledLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransaction.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransform3D.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransformLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAValueFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* COREANIMATION_H */</span></span></span><br></pre></td></tr></table></figure>
+
+<p>以CA开头的都是他的类，其中带layer的类是构成UIView的基石，用来呈现内容。其中：</p>
+<ul>
+<li>CAShapeLayer<br>用来根据CGPath来渲染的图层，这里CGPath就是上文中提到的CoreGraphics的一部分，比如常做的圆角，都是用cornerRadius来做，但是这是四个角都有的，要想做一个角的就得用他了。</li>
+<li>CATextLayer<br>这个layer可以呈现文字，包含了UILabel的功能，如果你闲的蛋疼，也可以用他来实现一个label。</li>
+<li>CAGradientLayer<br>是用来生成两种或更多颜色平滑渐变的。</li>
+<li>CAReplicatorLayer<br>是为了高效生成许多相似的图层。它会绘制一个或多个图层的子图层，并在每个复制体上应用不同的变换。</li>
+<li>CAScrollLayer<br>有点像UIScrollView，可以用来呈现比他大的内容。</li>
+<li>CATiledLayer<br>Tiled意思的瓷砖，就像铺地板一样，可以把一个很大的图片，切成一格一格的来呈现。</li>
+<li>CAEAGLLayer<br>用来进行OpenGL绘图的工作，需要有OpenGL的基础。</li>
+</ul>
+<p>CAAnimation类继承与NSObject，他是一个抽象类，并不直接负责动画，他有一个子类CAPropertyAnimation，也是抽象类。CAPropertyAnimation的两个子类才直接对layer层进行动画操作，其中CABasicAnimation负责基础动画，CAKeyframeAnimation负责关键帧动画。</p>
+<p>带有Emitter的类是负责粒子动画的类，可以用来做炫酷的粒子动画。</p>
+<p>带有Trans的类负责仿射动画，所谓仿射，就是模仿阳光照射，就有了立体的感觉，可以做三维空间的变换，不像CAAnimation，只能在平面上动手脚。</p>
+<p>CAMediaTiming是一个协议，里边规定了几个属性，用来精确控制时间，animation和layer实现了这个协议。</p>
+<h3 id="CoreGraphics-Quartz2D"><a href="#CoreGraphics-Quartz2D" class="headerlink" title="CoreGraphics/Quartz2D"></a>CoreGraphics/Quartz2D</h3><p>这是一个C语言写就的库,CoreGraphics的类名都是以CG开头的，平时所用的CGRect、CGPoint就在CGGeometry这个几何相关的类中定义，CGFont类则被封装成了UIFont，CGImage构成了UIImage，CGContext是绘图的上下文等等。所以CoreGraphics是系统绘制界面、文字、图像等UI的基础。</p>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> COREGRAPHICS_H_</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COREGRAPHICS_H_</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGBase.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGAffineTransform.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGBitmapContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColor.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColorConversionInfo.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColorSpace.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGDataConsumer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGDataProvider.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGError.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGFont.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGGeometry.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGGradient.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGImage.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFArray.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFContentStream.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFDictionary.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFDocument.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFObject.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFOperatorTable.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFPage.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFScanner.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFStream.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFString.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPath.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPattern.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGShading.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span>  <span class="comment">/* COREGRAPHICS_H_ */</span></span></span><br></pre></td></tr></table></figure>
+
+<p>这是一个基于CoreGraphics API的绘图框架，系统中并没有Quartz2D.framework这么一个库，他只是包含了CoreGraphics中的部分API，是一个抽象的引擎，并不是一个实体，他在iOS和MAC系统中负责：</p>
+<ul>
+<li>绘制图形 : 线条\三角形\矩形\圆\弧等</li>
+<li>绘制文字</li>
+<li>绘制\生成图片(图像)</li>
+<li>读取\生成PDF</li>
+<li>截图\裁剪图片</li>
+<li>自定义UI控件</li>
+<li>绘制渐变</li>
+</ul>
+<p>PS：因为是API是C语言写成的，所以ARC并不起作用，仍然需要手动管理内存。</p>
+<h3 id="OpenGL-ES"><a href="#OpenGL-ES" class="headerlink" title="OpenGL ES"></a>OpenGL ES</h3><p>OpenGL ES是应用程序编程接口，该接口描述了方法、结构、函数应具有的行为以及应该如何被使用的语义。也就是说它只定义了一套规范，具体的实现由设备制造商根据规范去做。因为制造商可以自由的实现Open GL ES，所以不同系统实现的OpenGL ES也存在着巨大的性能差异。</p>
+<h3 id="绘图框架"><a href="#绘图框架" class="headerlink" title="绘图框架"></a>绘图框架</h3><p><strong>CoreGraphics/Quartz2D</strong>: QuartZ 2D是苹果公司开发的一套API，它是Core Graphics Framework的一部分，是一套基于C的API框架，使用了Quartz作为绘图引擎。它提供了低级别、轻量级、高保真度的2D渲染。该框架可以用于基于路径的绘图、变换、颜色管理、脱屏渲染，模板、渐变、遮蔽、图像数据管理、图像的创建、遮罩以及PDF文档的创建、显示和分析。<br><strong>OpenGL ES</strong>: OpenGL ES是跨平台的图形API，属于OpenGL的一个简化版本</p>
+<p><strong>Metal</strong>: 进行图像处理的整体框架(苹果新推出的替代OpenGL)</p>
+<p><strong>注意：网上很多人说<code>UIBeizerPath</code>也是绘图框架，我觉得<code>UIBeizerPath</code>只是对<code>CoreGraphics</code>的<code>path</code>做了封装</strong></p>
+<h4 id="上下文？-什么是上下文？"><a href="#上下文？-什么是上下文？" class="headerlink" title="上下文？ 什么是上下文？"></a>上下文？ 什么是上下文？</h4><p>有许多方式获得一个图形上下文，这里我介绍两种最为常用的获取方法。</p>
+<p>第一种方法就是创建一个图片类型的上下文。调用UIGraphicsBeginImageContextWithOptions函数就可获得用来处理图片的图形上下文。利用该上下文，你就可以在其上进行绘图，并生成图片。调用UIGraphicsGetImageFromCurrentImageContext函数可从当前上下文中获取一个UIImage对象。记住在你所有的绘图操作后别忘了调用UIGraphicsEndImageContext函数关闭图形上下文。</p>
+<p>第二种方法是利用cocoa为你生成的图形上下文。当你子类化了一个UIView并实现了自己的drawRect：方法后，一旦drawRect：方法被调用，Cocoa就会为你创建一个图形上下文，此时你对图形上下文的所有绘图操作都会显示在UIView上。</p>
+<p>判断一个上下文是否为当前图形上下文需要注意的几点：<br>1.UIGraphicsBeginImageContextWithOptions函数不仅仅是创建了一个适用于图形操作的上下文，并且该上下文也属于当前上下文。<br>2.当drawRect方法被调用时，UIView的绘图上下文属于当前图形上下文。<br>3.回调方法所持有的context：参数并不会让任何上下文成为当前图形上下文。此参数仅仅是对一个图形上下文的引用罢了。    </p>
+<p>Graphics Context的几种类型</p>
+<ol>
+<li>Bitmap Graphics Context  </li>
+<li>PDF Graphics Context  </li>
+<li>Window Graphics Context  </li>
+<li>Layer Context  </li>
+<li>Post Graphics Context  </li>
+</ol>
+<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>iOS绘图框架CoreGraphics分析:<a href="http://www.cocoachina.com/articles/20187" target="_blank" rel="noopener">http://www.cocoachina.com/articles/20187</a><br>傻傻分不清：Quartz2D、QuartzCore、CoreAnimation、CoreImage、CoreGraphics:<a href="https://www.jianshu.com/p/397690fd4555" target="_blank" rel="noopener">https://www.jianshu.com/p/397690fd4555</a><br>iOS图像处理之Core Graphics和OpenGL ES小析:<a href="https://www.jianshu.com/p/f66a7ca326dd" target="_blank" rel="noopener">https://www.jianshu.com/p/f66a7ca326dd</a><br>iOS绘图教程 各种绘制原理：<a href="https://blog.csdn.net/moxi_wang/article/details/48473033" target="_blank" rel="noopener">https://blog.csdn.net/moxi_wang/article/details/48473033</a><br>iOS 图像渲染原理：<a href="http://www.cocoachina.com/cms/wap.php?action=article&id=25510" target="_blank" rel="noopener">http://www.cocoachina.com/cms/wap.php?action=article&amp;id=25510</a><br>iOS端K线系列之绘制方法比较（CoreGraphics、CoreAnimation）:<a href="https://www.jianshu.com/p/ed681ac5c89c" target="_blank" rel="noopener">https://www.jianshu.com/p/ed681ac5c89c</a><br>iOS 图形绘制框架 ——UIBezierPath 、Core Graphics 和OpenGL：<a href="https://www.jianshu.com/p/0cfd271fc6db" target="_blank" rel="noopener">https://www.jianshu.com/p/0cfd271fc6db</a></p>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
   </entry>
   <entry>
     <title>Realm使用分析</title>
@@ -708,75 +1137,6 @@
       </categories>
   </entry>
   <entry>
-    <title>FMDB使用分析</title>
-    <url>/2020/05/12/FMDB%E4%BD%BF%E7%94%A8%E5%88%86%E6%9E%90/</url>
-    <content><![CDATA[<h3 id="一、基本介绍"><a href="#一、基本介绍" class="headerlink" title="一、基本介绍"></a>一、基本介绍</h3><ul>
-<li>什么是FMDB  </li>
-</ul>
-<p>– FMDB是iOS平台的SQLite数据库框架<br>– FMDB以OC的方式封装了SQLite的C语言API</p>
-<ul>
-<li>FMDB常用类：  </li>
-</ul>
-<p>– <strong>FMDatabase</strong>：一个FMDatabase对象就代表一个单独的SQLite数据库用来执行SQL语句<br>– <strong>FMResultSet</strong>：使用FMDatabase执行查询后的结果集<br>– <strong>FMDatabaseQueue</strong>：用于在多线程中执行多个查询或更新，它是线程安全的  </p>
-<ul>
-<li>FMDB的优点  </li>
-</ul>
-<p>– 使用起来更加面向对象，省去了很多麻烦、冗余的C语言代码<br>– 对比苹果自带的Core Data框架，更加轻量级和灵活<br>– 提供了多线程安全的数据库操作方法，有效地防止数据混乱</p>
-<ul>
-<li>FMDB的缺点  </li>
-</ul>
-<p>– 它本身也存在一些问题，比如跨平台，因为它是用oc的语言封装的，所以<br>只能在ios开发的时候使用，如果想实现跨平台的操作，来降低开发的成本<br>和维护的成本,就需要使用比较原始的SQLite。</p>
-<h3 id="二、使用方法"><a href="#二、使用方法" class="headerlink" title="二、使用方法"></a>二、使用方法</h3><ul>
-<li><p>打开数据库<br>通过指定SQLite数据库文件路径来创建FMDatabase对象</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">FMDatabase *db = [FMDatabase databaseWithPath:path];</span><br><span class="line"><span class="keyword">if</span> (![db open]) &#123;</span><br><span class="line">  <span class="built_in">NSLog</span>(<span class="string">@"数据库打开失败！"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>关于文件路径的三种情况：</p>
-<blockquote>
-<p>1.具体的文件路径,或是数据库的文件不存在时,fmdb会自己创建一个。<br>2.若文件路径为空字符串@””，会在临时目录创建一个空的数据库。<br>并且，当(FMDatabase)数据库断开连接时，数据库文件被删除。<br>3.若你传入的参数为NULL，则它会建立一个在内存中的数据库，数据库断开连接时，数据库文件被删除。  </p>
-</blockquote>
-</li>
-<li><p>执行更新：<br>在FMDB中,除查询以外的所有操作,都称为“更新”如：create、drop、insert、update、delete等。<br>FMDB数据库操作使用 executeUpdate: 方法执行更新,返回BOOL型。 </p>
-</li>
-</ul>
-<p>executeUpdate:用法  </p>
-<blockquote>
-<p>-(BOOL)executeUpdate:(NSString)sql, …<br>-(BOOL)executeUpdateWithFormat:(NSString)format, …<br>-(BOOL)executeUpdate:(NSString*)sql withArgumentsInArray:(NSArray *)arguments<br>示例<br>[db executeUpdate:@”UPDATE t_student SET age = ? WHERE name = ?;”, @20, @”Jack”]</p>
-</blockquote>
-<ul>
-<li>执行查询<br>查询方法<blockquote>
-<p>-(FMResultSet )executeQuery: (NSString)sql, …<br>-(FMResultSet )executeQueryWithFormat:(NSString)format, …<br>-(FMResultSet *)executeQuery:(NSString *)sql withArgumentsInArray:(NSArray *)arguments  </p>
-</blockquote>
-</li>
-</ul>
-<p>示例</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 查询数据</span></span><br><span class="line">FMResultSet *rs = [db executeQuery:<span class="string">@"SELECT * FROM t_student"</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 遍历结果集</span></span><br><span class="line"><span class="keyword">while</span> ([rs next]) &#123; </span><br><span class="line">  <span class="built_in">NSString</span> *name = [rs stringForColumn:<span class="string">@"name"</span>];</span><br><span class="line">  <span class="keyword">int</span> age = [rs intForColumn:<span class="string">@"age"</span>];</span><br><span class="line">  <span class="keyword">double</span> score = [rs doubleForColumn:<span class="string">@"score"</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>FMDatabaseQueue</li>
-</ul>
-<p>注意：  </p>
-<blockquote>
-<p>FMDatabase这个类是线程不安全的，如果在多个线程中同时使用一个<br>FMDatabase实例，会造成数据混乱等问题<br>为了保证线程安全，FMDB提供方便快捷的FMDatabaseQueue<br>FMDatabaseQueue的创建<br>FMDatabaseQueue *queue = [FMDatabaseQueue databaseQueueWithPath:path];</p>
-</blockquote>
-<p>简单使用</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">[queue inDatabase:^(FMDatabase *db) &#123; </span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jack"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Rose"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jim"</span>];</span><br><span class="line">  FMResultSet *rs = [db executeQuery:<span class="string">@"select * from t_student"</span>];</span><br><span class="line">  <span class="keyword">while</span> ([rs next]) &#123;</span><br><span class="line">    <span class="comment">// …</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
-<p>使用事务</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">[queue inTransaction:^(FMDatabase *db, <span class="built_in">BOOL</span> *rollback) &#123;</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jack"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Rose"</span>];</span><br><span class="line">  [db executeUpdate:<span class="string">@"INSERT INTO t_student(name) VALUES (?)"</span>, <span class="string">@"Jim"</span>];</span><br><span class="line">  FMResultSet *rs = [db executeQuery:<span class="string">@"select * from t_student"</span>];</span><br><span class="line">  <span class="keyword">while</span> ([rs next]) &#123;</span><br><span class="line">    <span class="comment">// …</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
-<h3 id="三、数据库迁移"><a href="#三、数据库迁移" class="headerlink" title="三、数据库迁移"></a>三、数据库迁移</h3><p>使用FMDB与FMDBMigrationManager结合 进行数据库版本的升级  </p>
-<p>具体可以查看下面博客<br>iOS的数据库升级FMDBMigrationManager:<a href="https://www.jianshu.com/p/66bc680c4360" target="_blank" rel="noopener">https://www.jianshu.com/p/66bc680c4360</a><br>iOS 使用FMDB与FMDBMigrationManager结合 进行数据库版本的升级:<a href="https://blog.csdn.net/u014305730/article/details/82385126" target="_blank" rel="noopener">https://blog.csdn.net/u014305730/article/details/82385126</a>  </p>
-<h3 id="四、数据库加密"><a href="#四、数据库加密" class="headerlink" title="四、数据库加密"></a>四、数据库加密</h3><p>数据库加密一般有两种方式</p>
-<p>1、对所有数据进行加密  </p>
-<p>2、对数据库文件加密</p>
-<p>对比以上两种方式，第一种方式的常见做法是是将要存储的内容先加密然后存到数据库中，使用的时候将数据库解密，但是这样会消耗很多时间，大部分性能消耗在数据的加解密上，同时，第二种方式，SQLite本身支持加密功能(免费版的不支持) ，SQLCipher是一个开源的SQLite加密扩展，支持对db文件进行256位的AES加密，通常我们会用FMDB这个工具库，FMDB对原生的SQLite进行了封装，提供了面向对象的方式对数据库操作，同时FMDB 也提供了对 SQLCipher 的支持。（在github上集成fmdb上可以看到pod ’fmdb/sqlCipher‘）  </p>
-<p>FMDB数据库加密:<a href="https://www.jianshu.com/p/0c38bf93dcc0" target="_blank" rel="noopener">https://www.jianshu.com/p/0c38bf93dcc0</a></p>
-<h3 id="五、示例代码"><a href="#五、示例代码" class="headerlink" title="五、示例代码"></a>五、示例代码</h3><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">- (<span class="built_in">BOOL</span>)openDB &#123;</span><br><span class="line">    <span class="built_in">NSString</span> *path = [<span class="built_in">NSSearchPathForDirectoriesInDomains</span>(<span class="built_in">NSDocumentDirectory</span>, <span class="built_in">NSUserDomainMask</span>, <span class="literal">YES</span>).lastObject stringByAppendingPathComponent:<span class="string">@"database.sqlite"</span>];</span><br><span class="line">    FMDatabase *db = [FMDatabase databaseWithPath:path];</span><br><span class="line">    _db = db;</span><br><span class="line">    <span class="keyword">if</span> ([db open]) &#123;</span><br><span class="line">        <span class="built_in">BOOL</span> result = [db executeUpdate:<span class="string">@"CREATE TABLE IF NOT EXISTS t_student (id integer PRIMARY KEY AUTOINCREMENT, name text NOT NULL, age integer NOT NULL);"</span>];</span><br><span class="line">        <span class="keyword">if</span> (result) &#123;</span><br><span class="line">            <span class="built_in">NSLog</span>(<span class="string">@"表创建成功"</span>);</span><br><span class="line">            [db close];</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">YES</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="built_in">NSLog</span>(<span class="string">@"表创建失败"</span>);</span><br><span class="line">             [db close];</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">NSLog</span>(<span class="string">@"打开失败"</span>);</span><br><span class="line">         [db close];</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NO</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)add &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"INSERT INTO t_student (name, age) VALUES (?,?);"</span>, <span class="string">@"tom"</span>, @(arc4random_uniform(<span class="number">40</span>))];</span><br><span class="line">        <span class="comment">//    [self.db executeUpdate:@"INSERT INTO t_student (name, age) VALUES (?,?);" withArgumentsInArray:@[@"tom",@(arc4random_uniform(40))]];</span></span><br><span class="line">        <span class="comment">//    [self.db executeUpdateWithFormat:@"INSERT INTO t_student (name, age) VALUES (%@,%d);", @"tom", @(arc4random_uniform(40))];</span></span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)deleteStudent:(<span class="built_in">NSInteger</span>)ID &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"delete from t_student where id = ?;"</span>, @(ID)];</span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)update:(Student *)s &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        s.age = s.age - <span class="number">1</span>;</span><br><span class="line">        [<span class="keyword">self</span>.db executeUpdate:<span class="string">@"update t_student set age = ? where id = ?;"</span>,s.age, s.ID];</span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)query &#123;</span><br><span class="line">    <span class="keyword">if</span> ([<span class="keyword">self</span>.db open]) &#123;</span><br><span class="line">        FMResultSet *resultSet = [<span class="keyword">self</span>.db executeQuery:<span class="string">@"SELECT * FROM t_student;"</span>];</span><br><span class="line">        <span class="built_in">NSMutableArray</span> *tmp = [<span class="built_in">NSMutableArray</span> array];</span><br><span class="line">        <span class="keyword">while</span> ([resultSet next]) &#123;</span><br><span class="line">            <span class="keyword">int</span> ID = [resultSet intForColumn:<span class="string">@"id"</span>];</span><br><span class="line">            <span class="built_in">NSString</span> *name = [resultSet stringForColumn:<span class="string">@"name"</span>];</span><br><span class="line">            <span class="keyword">int</span> age = [resultSet intForColumn:<span class="string">@"age"</span>];</span><br><span class="line">            </span><br><span class="line">            Student *s = [[Student alloc]init];</span><br><span class="line">            s.ID = ID;</span><br><span class="line">            s.name = name;</span><br><span class="line">            s.age = age;</span><br><span class="line">            </span><br><span class="line">            [tmp addObject:s];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">self</span>.students = tmp;</span><br><span class="line">        </span><br><span class="line">        [<span class="keyword">self</span>.db close];</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>iOS开发数据库篇—FMDB简单介绍:<a href="https://www.cnblogs.com/wendingding/p/3871848.html" target="_blank" rel="noopener">https://www.cnblogs.com/wendingding/p/3871848.html</a></p>
-]]></content>
-      <categories>
-        <category>iOS</category>
-      </categories>
-  </entry>
-  <entry>
     <title>iOS面试题收录（一）</title>
     <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%80%EF%BC%89/</url>
     <content><![CDATA[<p>主题：是什么？</p>
@@ -878,351 +1238,9 @@
       </categories>
   </entry>
   <entry>
-    <title>iOS面试题收录（二）</title>
-    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%BA%8C%EF%BC%89/</url>
-    <content><![CDATA[<p>主题：怎么做？</p>
-<h4 id="设计模式是什么？-你知道哪些设计模式，并简要叙述？"><a href="#设计模式是什么？-你知道哪些设计模式，并简要叙述？" class="headerlink" title="设计模式是什么？ 你知道哪些设计模式，并简要叙述？"></a>设计模式是什么？ 你知道哪些设计模式，并简要叙述？</h4><p><strong>设计模式</strong>是一套被 反复使用、多数人知晓、经过分类编目的、代码设计经验的总结。</p>
-<p><strong>单例模式：</strong>单例模式确保某一个类只有一个实例，并提供一个访问它的全剧访问点。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F4a1dYXPf1oSfZYS7J1IQRA" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>工厂模式：</strong>工厂父类负责定义创建产品对象的公共接口，而工厂子类则负责生产具体的产品对象，即通过不停的工厂子类来创建不同的产品对象。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fjuejin.im%2Fpost%2F5bcb0362e51d450e7042eb6d" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>代理模式 :</strong>为某个对象提供一个代理，并由这个代理对象控制对原对象的访问。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F22eVsnQP2cTccWwIaLfz5g" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>适配器模式：</strong> 将一个接口转换成客户希望的另一个接口，使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。适配器模式的别名是包装器模式（Wrapper），是一种结构型设计模式。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F3abKTDIVy8BJJjThr2jgMQ" target="_blank" rel="noopener">具体的详情可点击进入查看</a><br><strong>装饰者模式：</strong> 不改变原有对象的前提下，动态地给一个对象增加一些额外的功能。<a href="https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FkoaeYH1U-nfrsSQ8FH3hhQ" target="_blank" rel="noopener">具体的详情可点击进入查看</a></p>
-<h4 id="MVC-和-MVVM-的区别？"><a href="#MVC-和-MVVM-的区别？" class="headerlink" title="MVC 和 MVVM 的区别？"></a>MVC 和 MVVM 的区别？</h4><p><strong>MVC</strong><br>MVC（Model-View-Controller）模式结构图，可分为三部分：模型（Model）、视图（View）、控制器（Controller）。其在MVC模式中所扮演的角色分别为：<br>Model：模型管理应用程序的数据，响应有关其状态信息（通常来自View）的请求，并响应指令以更改状态（通常来自Controller）。<br>View：视图管理数据的展示。<br>Controller：控制器解释用户的输入，并通知模型、视图进行状态更新<br>所有通信都是单向的。<br>优点：对Controller进行瘦身，将View内部的细节封装起来了，外界不知道View内部的具体实现<br>缺点：View和Controller依赖于Model</p>
-<p><strong>MVVM</strong><br>MVVM（Model View View-Model）就是为了解决过于臃肿的问题。MVVM的思想是将Controller中UI控制逻辑与业务逻辑进行分离，并抽离出一个View-Model来完成UI控制的逻辑。而Controller只需要负责业务逻辑即可</p>
-<p>唯一的区别是，View-Model可以调用Model定义的方法，从Model中获取数据以用于View，并对数据进行预处理，使View可以直接使用。View又可以向View-Model发出用户的操作命令，从而更改Model。MVVM实现了一种双向绑定机制。</p>
-<p>优点：降低了View和Model之间的耦合；分离了业务逻辑和视图逻辑。<br>缺点：View和Model双向绑定导致bug难以定位，两者中的任何一方出现问题，另一方也会出现问题；增加了胶水代码</p>
-<h4 id="iOS-内存的使用和优化的注意事项"><a href="#iOS-内存的使用和优化的注意事项" class="headerlink" title="iOS 内存的使用和优化的注意事项?"></a>iOS 内存的使用和优化的注意事项?</h4><p><strong>重用问题：</strong>如<code>UITableViewCells</code>、<code>UICollectionViewCells</code>、<code>UITableViewHeaderFooterViews</code>。设置正确的<code>reuseIdentifier</code>，充分重用<br><strong>不要使用太复杂的XIB/Storyboard：</strong>载入时就会将<code>XIB</code>/<code>storyboard</code>需要的所有资源，包括图片全部载入内存。<br><strong>尽量把views设置为不透明：</strong>当opque为NO的时候，图层的半透明取决于图片和其本身合成的图层为结果，可提高性能<br><strong>选择正确的数据结构：</strong>学会选择对业务场景最合适的数组结构是写出高效代码的基础。<br><strong>gzip/zip压缩：</strong>当从服务端下载相关附件时，可以通过gzip/zip压缩后再下载，使得内存更小，下载速度也更快。<br><strong>延迟加载：</strong>对于不应该使用的数据，使用延迟加载方式。对于不需要马上显示的视图，使用延迟加载方式。比如，网络请求失败时显示的提示界面，可能一直都不会使用到，因此应该使用延迟加载。<br><strong>数据缓存：</strong>对于cell的行高要缓存起来，使得reload数据时，效率也极高。<br>而对于那些网络数据，不需要每次都请求的，应该缓存起来。可以写入数据库，也可以通过plist文件存储<br><strong>处理内存警告：</strong>一般在基类统一处理内存警告，将相关不用资源立即释放掉</p>
-<h4 id="iOS-你在项目中是怎么优化内存的？"><a href="#iOS-你在项目中是怎么优化内存的？" class="headerlink" title="iOS 你在项目中是怎么优化内存的？"></a>iOS 你在项目中是怎么优化内存的？</h4><blockquote>
-<p>这个问题有时候笔试中也有，有时候有些面试官会在面试中问你这个问题</p>
-</blockquote>
-<p>1&gt;.避免庞大的Xib(Xib比frame消耗更多的CPU资源)<br>2&gt;.不要阻塞主线程，尽量把耗时的操作放到子线程<br>3&gt;.重用和延迟加载<br>4&gt;.尽量减少视图数量和层次<br>5&gt;.优化TableView,为了使TableVIew有更好的滚动性能可采取以下措施：</p>
-<ul>
-<li>正确使用ruseIdentifier来重用cells</li>
-<li>采用懒加载即延迟加载的方式加载cell上的控件</li>
-<li>当TableView滑动的时候不加载</li>
-<li>缓存cell的高度。在呈现cell前，把cell的高度计算好缓存起来，避免每次加载cell的时候都要计算</li>
-<li>尽量使用不透明的UI控件</li>
-</ul>
-<h4 id="写一个完整的代理，包括声明、实现"><a href="#写一个完整的代理，包括声明、实现" class="headerlink" title="写一个完整的代理，包括声明、实现"></a>写一个完整的代理，包括声明、实现</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 创建</span></span><br><span class="line"><span class="class"><span class="keyword">@protocol</span> <span class="title">PersonDelagate</span></span></span><br><span class="line"><span class="keyword">@required</span></span><br><span class="line">-(<span class="keyword">void</span>)eat:(<span class="built_in">NSString</span> *)foodName;</span><br><span class="line"><span class="keyword">@optional</span></span><br><span class="line">-(<span class="keyword">void</span>)run;</span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 声明 .h</span></span><br><span class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">Person</span>: <span class="title">NSObject</span>&lt;<span class="title">PersonDelagate</span>&gt;</span></span><br><span class="line"><span class="keyword">@end</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现 .m</span></span><br><span class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">Person</span></span></span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)eat:(<span class="built_in">NSString</span> *)foodName &#123;</span><br><span class="line"><span class="built_in">NSLog</span>(<span class="string">@"吃:%@"</span>, foodName);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">- (<span class="keyword">void</span>)run &#123;</span><br><span class="line">   <span class="built_in">NSLog</span>(<span class="string">@"run"</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">@end</span></span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="分析json、xml-的区别-json、xml-解析-式的底层是如何让处理的"><a href="#分析json、xml-的区别-json、xml-解析-式的底层是如何让处理的" class="headerlink" title="分析json、xml 的区别? json、xml 解析 式的底层是如何让处理的"></a>分析json、xml 的区别? json、xml 解析 式的底层是如何让处理的</h4><p>(一) JSON与XML的区别： </p>
-<p>（1）可读性方面：基本相同，XML的可读性比较好； </p>
-<p>（2）可扩展性方面：都具有良好的扩展性； </p>
-<p>（3）编码难度方面：相对而言，JSON的编码比较容易； </p>
-<p>（4）解码难度：JSON的解码难度基本为零，XML需要考虑子节点和父节点；</p>
-<p>（5）数据体积方面：JSON相对于XML来讲，数据体积小，传递的速度比较快； </p>
-<p>（6）数据交互方面：JSON与javascript的交互更加方便，更容易解析处理，更好的数据交互； </p>
-<p>（7）数据描述方面：XML对数据描述性比较好 </p>
-<p>（8）传输速度方面：JSON的速度远远快于XML。 </p>
-<p>(二）JSON与XML底层实现原理： 　</p>
-<p>（1）JSON底层原理：遍历字符串中的字符，最终根据格式规定的特殊字符，比如{}、[]、：等进行区分，{}号表示字典，[]号表示数组，：号是字典的键和值的分水岭，最终仍是将JSON转化为字典，只不过字典中的值可能是“字典、数组或者字符串而已”。 　　</p>
-<p>（2）XML底层原理：XML解析常用的解析方法有两种：DOM解析和SAX解析；DOM采用的是树形结构的方式访问XML文档，而SAX采用的是事件模型；DOM解析把XML文档转化为一个包含其内容的树，并可以对树进行遍历，使用DOM解析器的时候需要处理整个XML文档，所以对内存和性能的要求比较高；SAX在解析XML文档的时候可以触发一系列的事件，当发现给定的tag的时候，他可以激活一个回调方法，告诉该方法指定的标签已经找到，SAX对内存的要求通常会比较低，因为他让开发人员自己来决定所要处理的tag，特别是当开发人员只需要处理文档中所包含部分数据时，SAX这种扩展能力得到了更好的体现。</p>
-<h4 id="如何处理UITableVier-中Cell-动态计算高度的问题，都有哪些方案"><a href="#如何处理UITableVier-中Cell-动态计算高度的问题，都有哪些方案" class="headerlink" title="如何处理UITableVier 中Cell 动态计算高度的问题，都有哪些方案?"></a>如何处理UITableVier 中Cell 动态计算高度的问题，都有哪些方案?</h4><ol>
-<li><p>你的Cell要使用AutoLayout来布局约束这是必须的； 设置tableview的estimatedRowHeight为一个非零值，这个属性是设置一个预估的高度值，不用太精确。 设置tableview的rowHeight属性为UITableViewAutomaticDimension</p>
-</li>
-<li><p>第三方 UITableView+FDTemplateLayoutCell</p>
-</li>
-</ol>
-<h4 id="怎么高效的实现控件的圆角效果"><a href="#怎么高效的实现控件的圆角效果" class="headerlink" title="怎么高效的实现控件的圆角效果"></a>怎么高效的实现控件的圆角效果</h4><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="comment">//绘制圆角 </span></span><br><span class="line">-(<span class="built_in">UIImageView</span> *)roundedRectImageViewWithCornerRadius:(<span class="built_in">CGFloat</span>)cornerRadius &#123; </span><br><span class="line">  <span class="built_in">UIBezierPath</span> *bezierPath = [<span class="built_in">UIBezierPath</span> bezierPathWithRoundedRect:<span class="keyword">self</span>.bounds 		cornerRadius:cornerRadius]; </span><br><span class="line">  <span class="built_in">CAShapeLayer</span> *layer = [<span class="built_in">CAShapeLayer</span> layer]; </span><br><span class="line">  layer.path = bezierPath.CGPath; </span><br><span class="line">  <span class="keyword">self</span>.layer.mask = layer; </span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">self</span>; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="假如Controller太臃肿，如何优化"><a href="#假如Controller太臃肿，如何优化" class="headerlink" title="假如Controller太臃肿，如何优化?"></a>假如Controller太臃肿，如何优化?</h4><ol>
-<li><p>将网络请求抽象到单独的类中 方便在基类中处理公共逻辑； 方便在基类中处理缓存逻辑，以及其它一些公共逻辑； 方便做对象的持久化。 </p>
-</li>
-<li><p>将界面的封装抽象到专门的类中 构造专门的 UIView 的子类，来负责这些控件的拼装。这是最彻底和优雅的方式，不过稍微麻烦一些的是，你需要把这些控件的事件回调先接管，再都一一暴露回 Controller。 </p>
-</li>
-<li><p>构造 ViewModel 借鉴MVVM。具体做法就是将 ViewController 给 View 传递数据这个过程，抽象成构造 ViewModel 的过程。 </p>
-</li>
-<li><p>专门构造存储类 专门来处理本地数据的存取。 </p>
-</li>
-<li><p>整合常量</p>
-</li>
-</ol>
-<h4 id="项目中网络层如何做安全处理"><a href="#项目中网络层如何做安全处理" class="headerlink" title="项目中网络层如何做安全处理?"></a>项目中网络层如何做安全处理?</h4><ol>
-<li>判断API的调用请求是否来自于经过授权的APP。如若不是则拒绝请求访问 </li>
-<li>在数据请求的过程中进行URL加密处理：防止反编译，接口信息被静态分析。 </li>
-<li>数据传输加密：对客户端传输数据提供有效的加密方案，以防止网络接口的拦截。 如果可以尽量使用HTTPS，可以有效的避免接口数据在传输中被攻击。</li>
-</ol>
+    <title>iOS面试题收录（三）</title>
+    <url>/2020/05/08/iOS%E9%9D%A2%E8%AF%95%E9%A2%98%E6%94%B6%E5%BD%95%EF%BC%88%E4%B8%89%EF%BC%89/</url>
+    <content><![CDATA[<p>主题：高级问题</p>
 ]]></content>
-      <categories>
-        <category>iOS面试汇总</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>iOS高级必备知识</title>
-    <url>/2020/05/08/iOS%E9%AB%98%E7%BA%A7%E5%BF%85%E5%A4%87%E7%9F%A5%E8%AF%86/</url>
-    <content><![CDATA[<h3 id="一、UI视图"><a href="#一、UI视图" class="headerlink" title="一、UI视图"></a>一、UI视图</h3><p>1.1 、事件传递机制</p>
-<p>1.2 、UI绘制原理</p>
-<p>1.3 、异步绘制原理</p>
-<p>1.4 、流失页面的性能优化</p>
-<p>1.5 、离屏渲染</p>
-<h3 id="二、OC语言"><a href="#二、OC语言" class="headerlink" title="二、OC语言"></a>二、OC语言</h3><p>2.1 、KVO</p>
-<p>2.2、 KVC</p>
-<p>2.3、分类</p>
-<p>2.4、 关联对象</p>
-<h3 id="三、Runtime"><a href="#三、Runtime" class="headerlink" title="三、Runtime"></a>三、Runtime</h3><p>3.1、 对象、类、元祖对象</p>
-<p>3.2、 消息传递机制</p>
-<p>3.3、消息转发流程</p>
-<p>3.4、Method-Swizzing</p>
-<h3 id="四、内存"><a href="#四、内存" class="headerlink" title="四、内存"></a>四、内存</h3><p>4.1、 引用计数表</p>
-<p>4.2、 弱引用表</p>
-<p>4.3、 ARC，MRC</p>
-<p>4.4、 循环引用</p>
-<p>4.5、 内存管理</p>
-<h3 id="五、Block"><a href="#五、Block" class="headerlink" title="五、Block"></a>五、Block</h3><p>5.1、 Block本质</p>
-<p>5.2、 截获变量特性</p>
-<p>5.3、 内存管理</p>
-<p>5.4、 循环应用</p>
-<h3 id="六、多线程"><a href="#六、多线程" class="headerlink" title="六、多线程"></a>六、多线程</h3><p>6.1、 GCD，NSoperation</p>
-<p>6.2、 资源共享</p>
-<p>6.3、 线程同步</p>
-<p>6.4、 SpinLock</p>
-<h3 id="七、RunLoop"><a href="#七、RunLoop" class="headerlink" title="七、RunLoop"></a>七、RunLoop</h3><p>7.1、 事件循环</p>
-<p>7.2、 常驻线程</p>
-<h3 id="八、网络"><a href="#八、网络" class="headerlink" title="八、网络"></a>八、网络</h3><p>8.1、 HTTPS</p>
-<p>8.2、 对称加密算法</p>
-<p>8.3、 非对称加密算法</p>
-<p>8.4、 DNS解析</p>
-<p>8.5 HTTP，TCP</p>
-<h3 id="九、设计模式"><a href="#九、设计模式" class="headerlink" title="九、设计模式"></a>九、设计模式</h3><p>9.1、 桥接，适配器，命令</p>
-<p>9.2、 责任链，单例</p>
-<p>9.3、 六大设计原则</p>
-<h3 id="十、架构-框架"><a href="#十、架构-框架" class="headerlink" title="十、架构/框架"></a>十、架构/框架</h3><p>10.1、 MVVM，时长统计框架</p>
-<p>10.2、 图片缓存框架</p>
-<p>10.3、 PV量级10亿业务架构</p>
-<h3 id="十一、算法"><a href="#十一、算法" class="headerlink" title="十一、算法"></a>十一、算法</h3><p>11.1、 字符串反转</p>
-<p>11.2、 单链表反转</p>
-<p>11.3、 有序数组递归</p>
-<p>11.4、 无序数组找中位</p>
-<h3 id="十二、第三方库"><a href="#十二、第三方库" class="headerlink" title="十二、第三方库"></a>十二、第三方库</h3><p>12.1、 AFNETworking<br><strong>…</strong></p>
-<h3 id="十三、跨平台-最少会其一"><a href="#十三、跨平台-最少会其一" class="headerlink" title="十三、跨平台(最少会其一)"></a>十三、跨平台(最少会其一)</h3><p>13.1、 RN</p>
-<p>13.2、 Flutter</p>
-<p>13.3、 Weex</p>
-<h3 id="十四、加分项（不会也没事，会就更好）"><a href="#十四、加分项（不会也没事，会就更好）" class="headerlink" title="十四、加分项（不会也没事，会就更好）"></a>十四、加分项（不会也没事，会就更好）</h3><p>14.1、OpenGL ES</p>
-<p>14.2、逆向</p>
-]]></content>
-      <categories>
-        <category>iOS</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>load和initialize方法的区别</title>
-    <url>/2020/05/12/load%E5%92%8Cinitialize%E6%96%B9%E6%B3%95%E7%9A%84%E5%8C%BA%E5%88%AB/</url>
-    <content><![CDATA[<h4 id="调用方式"><a href="#调用方式" class="headerlink" title="调用方式"></a>调用方式</h4><p>1、load是根据函数地址直接调用</p>
-<p>2、initialize是通过objc_msgSeng调用</p>
-<h4 id="调用时刻"><a href="#调用时刻" class="headerlink" title="调用时刻"></a>调用时刻</h4><p>1、load是runtime加载类、分类的时候调用(只会调用一次)</p>
-<p>2、initialize是类第一次接收到消息的时候调用, 每一个类只会initialize一次(如果子类没有实现initialize方法, 会调用父类的initialize方法, 所以父类的initialize方法可能会调用多次)</p>
-<h4 id="load和initializee的调用顺序"><a href="#load和initializee的调用顺序" class="headerlink" title="load和initializee的调用顺序"></a>load和initializee的调用顺序</h4><p><strong>load</strong></p>
-<p>1、先调用类的load</p>
-<ul>
-<li><p>先编译的类, 优先调用load（先编译，先调用）</p>
-</li>
-<li><p>调用子类的load之前, 会先调用父类的load</p>
-</li>
-</ul>
-<p>2、再调用分类的load</p>
-<ul>
-<li>先编译的分类, 优先调用load（先编译，先调用）</li>
-</ul>
-<p><strong>initialize</strong></p>
-<p>先调用父类的+initialize，再调用子类的+initialize。（先初始化父类，再初始化子类，每个类只会初始化1次）<br>如果分类实现了+initialize，会覆盖原有类的+initialize</p>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><ol>
-<li><p>+initialize和+load的最大区别是</p>
-<ul>
-<li><p>initialize是通过objc_msgSeng调用，load是根据函数地址直接调用；</p>
-</li>
-<li><p>如果子类没有实现initialize方法, 会调用父类的initialize方法, 所以父类的initialize方法可能会调用多次</p>
-</li>
-<li><p>如果分类实现了+initialize，会覆盖原有类的+initialize</p>
-</li>
-</ul>
-</li>
-</ol>
-]]></content>
-      <categories>
-        <category>iOS</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>NSURLSession</title>
-    <url>/2020/05/14/NSURLSession/</url>
-    <content><![CDATA[<h3 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h3><p>NSURLSession在2013年随着iOS7的发布一起面世，苹果对它的定位是作为NSURLConnection的替代者，然后逐步将NSURLConnection退出历史舞台。现在使用最广泛的第三方网络框架：AFNetworking、SDWebImage等等都使用了NSURLSession。</p>
-<p>在WWDC 2013中，Apple的团队对NSURLConnection进行了重构，并推出了NSURLSession作为替代。NSURLSession将NSURLConnection替换为<em>NSURLSession<em>和</em>NSURLSessionConfiguration<em>，以及3个NSURLSessionTask的子类：</em>NSURLSessionDataTask</em>, <em>NSURLSessionUploadTask</em>, 和<em>NSURLSessionDownloadTask</em>。</p>
-<p><img src="1.jpg" alt=""></p>
-<p>NSURLSessionTask及三个子类继承关系：</p>
-<p><img src="2.jpg" alt=""></p>
-<p><strong>NSURLSessionTask及其子类</strong></p>
-<p><strong><code>NSURLSessionTask</code>本身是一个抽象类，在使用的时候，通常是根据具体的需求使用它的几个子类</strong> </p>
-<p><strong><code>NSURLSessionDataTask</code>可以用来发送常见的Get，Post请求，既可以用来上传也可以用来下载</strong></p>
-<p> <strong><code>NSURLSessionDownloadTask</code>可以用来发送下载请求，专门用来下载数据</strong></p>
-<p> <strong><code>NSURLSessionUploadTask</code>可以用来发送上传请求，专门用来上传数据</strong></p>
-<h3 id="二、NSURLSession的使用"><a href="#二、NSURLSession的使用" class="headerlink" title="二、NSURLSession的使用"></a>二、NSURLSession的使用</h3><p>NSURLSession 本身是不会进行请求的，而是通过创建 task 的形式进行网络请求（resume() 方法的调用），同一个 NSURLSession 可以创建多个 task，并且这些 task 之间的 cache 和 cookie 是共享的。NSURLSession的使用有如下几步：</p>
-<ul>
-<li>第一步：创建NSURLSession对象</li>
-<li>第二步：使用NSURLSession对象创建Task</li>
-<li>第三步：启动任务</li>
-</ul>
-<h4 id="创建NSURLSession对象"><a href="#创建NSURLSession对象" class="headerlink" title="创建NSURLSession对象"></a>创建NSURLSession对象</h4><p>NSURLSession对象的创建有如下三种方法：</p>
-<p>（1）直接创建</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">NSURLSession *session &#x3D; [NSURLSession sharedSession];</span><br></pre></td></tr></table></figure>
-
-<p>（2）配置后创建</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">[NSURLSession sessionWithConfiguration:defaultSessionConfiguration];</span><br></pre></td></tr></table></figure>
-
-<p>（3）设置加代理获得</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; 使用代理方法需要设置代理,但是session的delegate属性是只读的,要想设置代理只能通过这种方式创建session</span><br><span class="line">NSURLSession *session &#x3D; [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]</span><br><span class="line">    delegate:self</span><br><span class="line">    delegateQueue:[[NSOperationQueue alloc] init]];</span><br></pre></td></tr></table></figure>
-
-<p>关于NSURLSession的配置有三种类型：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F;默认的配置会将缓存存储在磁盘上</span><br><span class="line">+ (NSURLSessionConfiguration *)defaultSessionConfiguration;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;瞬时会话模式不会创建持久性存储的缓存</span><br><span class="line">+ (NSURLSessionConfiguration *)ephemeralSessionConfiguration;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;后台会话模式允许程序在后台进行上传下载工作</span><br><span class="line">+ (NSURLSessionConfiguration *)backgroundSessionConfigurationWithIdentifier:(NSString *)identifier</span><br></pre></td></tr></table></figure>
-
-
-
-<h4 id="使用NSURLSession对象创建Task"><a href="#使用NSURLSession对象创建Task" class="headerlink" title="使用NSURLSession对象创建Task"></a>使用NSURLSession对象创建Task</h4><p>NSURLSessionTask的创建要根据具体需要创建相应类型的Task。</p>
-<p>（1）NSURLSessionDataTask</p>
-<p>通过request对象或url创建：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request;</span><br><span class="line"></span><br><span class="line">- (NSURLSessionDataTask *)dataTaskWithURL:(NSURL *)url;</span><br></pre></td></tr></table></figure>
-
-
-
-<p>通过request对象或url创建，同时指定任务完成后通过completionHandler指定回调的代码块：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionDataTask *)dataTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;</span><br></pre></td></tr></table></figure>
-
-<p>（2）NSURLSessionUploadTask</p>
-<p>通过request创建，在上传时指定文件源或数据源：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL;  </span><br><span class="line">   </span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData;  </span><br><span class="line">  </span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithStreamedRequest:(NSURLRequest *)request;</span><br></pre></td></tr></table></figure>
-
-
-
-<p>通过completionHandler指定任务完成后的回调代码块：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;</span><br></pre></td></tr></table></figure>
-
-<p>（3）NSURLSessionDownloadTask</p>
-<p>下载任务支持断点续传，第三种方式是通过之前已经下载的数据来创建下载任务：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request;    </span><br><span class="line">    </span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url;    </span><br><span class="line">  </span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData;</span><br></pre></td></tr></table></figure>
-
-<p>同样地可以通过completionHandler指定任务完成后的回调代码块：</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;</span><br></pre></td></tr></table></figure>
-
-<p>我们在使用三种 task 的任意一种的时候都可以指定相应的代理。NSURLSession 的代理对象结构如下：</p>
-<p><img src="3.jpg" alt=""></p>
-<p><em>NSURLSessionDelegate</em> – 作为所有代理的基类，定义了网络请求最基础的代理方法。</p>
-<p><em>NSURLSessionTaskDelegate</em> – 定义了网络请求任务相关的代理方法。</p>
-<p><em>NSURLSessionDownloadDelegate</em> – 用于下载任务相关的代理方法，比如下载进度等等。</p>
-<p><em>NSURLSessionDataDelegate</em> – 用于普通数据任务和上传任务。</p>
-<h4 id="启动任务"><a href="#启动任务" class="headerlink" title="启动任务"></a>启动任务</h4><figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; 启动任务</span><br><span class="line">[task resume];</span><br></pre></td></tr></table></figure>
-
-
-
-<h3 id="三、GET请求与POST请求"><a href="#三、GET请求与POST请求" class="headerlink" title="三、GET请求与POST请求"></a>三、GET请求与POST请求</h3><p>1、GET 请求</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F;1、创建NSURLSession对象</span><br><span class="line">NSURLSession *session &#x3D; [NSURLSession sharedSession];</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;2、利用NSURLSession创建任务(task)</span><br><span class="line">NSURL *url &#x3D; [NSURL URLWithString:@&quot;http:&#x2F;&#x2F;www.xxx.com&#x2F;login?username&#x3D;myName&amp;pwd&#x3D;myPsd&quot;];</span><br><span class="line"></span><br><span class="line">NSURLSessionDataTask *task &#x3D; [session dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) &#123;</span><br><span class="line">    </span><br><span class="line">    NSLog(@&quot;%@&quot;,[[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding]);</span><br><span class="line">    &#x2F;&#x2F;打印解析后的json数据</span><br><span class="line">    &#x2F;&#x2F;NSLog(@&quot;%@&quot;, [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil]);</span><br><span class="line"></span><br><span class="line">&#125;];</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;3、执行任务</span><br><span class="line">[task resume];</span><br></pre></td></tr></table></figure>
-
-<p>2、POST请求</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F;1、创建NSURLSession对象</span><br><span class="line">NSURLSession *session &#x3D; [NSURLSession sharedSession];</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;2、利用NSURLSession创建任务(task)</span><br><span class="line">NSURL *url &#x3D; [NSURL URLWithString:@&quot;http:&#x2F;&#x2F;www.xxx.com&#x2F;login&quot;];</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;创建请求对象里面包含请求体</span><br><span class="line">NSMutableURLRequest *request &#x3D; [NSMutableURLRequest requestWithURL:url];</span><br><span class="line">request.HTTPMethod &#x3D; @&quot;POST&quot;;</span><br><span class="line">request.HTTPBody &#x3D; [@&quot;username&#x3D;myName&amp;pwd&#x3D;myPsd&quot; dataUsingEncoding:NSUTF8StringEncoding];</span><br><span class="line"></span><br><span class="line">NSURLSessionDataTask *task &#x3D; [session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) &#123;</span><br><span class="line">      </span><br><span class="line">    NSLog(@&quot;%@&quot;,[[NSString alloc]initWithData:data encoding:NSUTF8StringEncoding]);</span><br><span class="line">    &#x2F;&#x2F;打印解析后的json数据</span><br><span class="line">    &#x2F;&#x2F;NSLog(@&quot;%@&quot;, [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil]);</span><br><span class="line"></span><br><span class="line">&#125;];</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;3、执行任务</span><br><span class="line"> [task resume];</span><br></pre></td></tr></table></figure>
-
-
-
-<h3 id="四、文件的上传"><a href="#四、文件的上传" class="headerlink" title="四、文件的上传"></a>四、文件的上传</h3><p>我们可以使用NSURLSessionUploadTask进行文件的上传</p>
-<p><strong>创建方法</strong>（基于 <code>NSURLSession</code> 对象）</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; 使用 NSURLRequest 对象创建，上传时指定文件源</span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL;  </span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 使用 NSURLRequest 对象创建，上传时指定数据源   </span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData;  </span><br><span class="line">  </span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithStreamedRequest:(NSURLRequest *)request;</span><br></pre></td></tr></table></figure>
-
-
-
-<p><strong>CompletionHandler</strong></p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromFile:(NSURL *)fileURL completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionUploadTask *)uploadTaskWithRequest:(NSURLRequest *)request fromData:(NSData *)bodyData completionHandler:(void (^)(NSData *data, NSURLResponse *response, NSError *error))completionHandler;</span><br></pre></td></tr></table></figure>
-
-<p><strong>关于分片上传和断点续传上传</strong></p>
-<p>可以参考阿里云AliyunOSSiOS源码及文档</p>
-<p>文档地址：<a href="https://help.aliyun.com/document_detail/31850.html?spm=a2c4g.11186623.6.610.62d72201Fvv00V" target="_blank" rel="noopener">https://help.aliyun.com/document_detail/31850.html?spm=a2c4g.11186623.6.610.62d72201Fvv00V</a></p>
-<h3 id="五、文件的下载"><a href="#五、文件的下载" class="headerlink" title="五、文件的下载"></a>五、文件的下载</h3><p>我们可以使用NSURLSessionDownloadTask实现文件的下载。</p>
-<p><code>NSURLSessionDownloadTask</code> 主要用于 <strong>文件下载</strong>，它针对大文件的网络请求做了更多的处理，如：下载进度、断点续传等。</p>
-<p><strong>创建方法</strong>（基于 <code>NSURLSession</code> 对象）</p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">&#x2F;&#x2F; 使用 NSURLRequest 对象创建</span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request;    </span><br><span class="line">    </span><br><span class="line">&#x2F;&#x2F; 使用 NSURL 对象创建</span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url;    </span><br><span class="line">  </span><br><span class="line">&#x2F;&#x2F; 使用之前已经下载的数据来创建</span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData;</span><br></pre></td></tr></table></figure>
-
-
-
-<p><strong>CompletionHandler</strong></p>
-<figure class="highlight plain"><table><tr><td class="code"><pre><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithURL:(NSURL *)url completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;    </span><br><span class="line"></span><br><span class="line">- (NSURLSessionDownloadTask *)downloadTaskWithResumeData:(NSData *)resumeData completionHandler:(void (^)(NSURL *location, NSURLResponse *response, NSError *error))completionHandler;</span><br></pre></td></tr></table></figure>
-
-
-
-<p><strong>关于断点续传下载</strong></p>
-<p>设计思路是用请求的Range</p>
-<p>iOS断点续传：<a href="https://cloud.tencent.com/developer/article/1423899" target="_blank" rel="noopener">https://cloud.tencent.com/developer/article/1423899</a></p>
-<p>AFNetworking 实现断点续传：<a href="http://www.yangjie.hu/2018/05/15/breakpoint-resume-in-iOS/" target="_blank" rel="noopener">http://www.yangjie.hu/2018/05/15/breakpoint-resume-in-iOS/</a></p>
-<h3 id="六、补充"><a href="#六、补充" class="headerlink" title="六、补充"></a>六、补充</h3><p>iOS 利用AFNetworking实现大文件分片上传</p>
-<p><a href="https://www.jianshu.com/p/7919c620967e" target="_blank" rel="noopener">https://www.jianshu.com/p/7919c620967e</a></p>
-<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>NSURLSession：<a href="https://www.jianshu.com/p/e798c6fe26ea" target="_blank" rel="noopener">https://www.jianshu.com/p/e798c6fe26ea</a></p>
-<p>iOS 网络(1)——NSURLSession: <a href="http://chuquan.me/2019/07/21/ios-network-nsurlsession/" target="_blank" rel="noopener">http://chuquan.me/2019/07/21/ios-network-nsurlsession/</a></p>
-<p>iOS NSURLSession 详解：<a href="https://juejin.im/entry/58aacabcac502e006973ce03" target="_blank" rel="noopener">https://juejin.im/entry/58aacabcac502e006973ce03</a></p>
-]]></content>
-  </entry>
-  <entry>
-    <title>图像显示原理</title>
-    <url>/2020/05/22/%E5%9B%BE%E5%83%8F%E6%98%BE%E7%A4%BA%E5%8E%9F%E7%90%86/</url>
-    <content><![CDATA[]]></content>
-  </entry>
-  <entry>
-    <title>图像绘制原理</title>
-    <url>/2020/05/12/%E5%9B%BE%E5%83%8F%E7%BB%98%E5%88%B6%E5%8E%9F%E7%90%86/</url>
-    <content><![CDATA[<p><img src="draw_1.png" alt=""></p>
-<ul>
-<li><p><a href="">CoreAnimation</a></p>
-</li>
-<li><p><a href="">CoreGraphics</a>    </p>
-</li>
-<li><p><a href="">OpenGL ES</a> </p>
-</li>
-</ul>
-<h3 id="CoreAnimation"><a href="#CoreAnimation" class="headerlink" title="CoreAnimation"></a>CoreAnimation</h3><p>打开<code>QuartzCore</code>的头文件可以看到,<code>QuartzCore</code>就是引用了<code>CoreAnimation</code>的头文件，所以这两个实际上是同一个，是雌雄同体。。。。<br><code>CoreAnimation</code>中文名核心动画，看名字是负责动画的，其实不然，作用相当大，来看看他的头文件</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> COREANIMATION_H</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COREANIMATION_H</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QuartzCore/CABase.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;QuartzCore/CATransform3D.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __OBJC__</span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;Foundation/Foundation.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAAnimation.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CADisplayLink.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEAGLLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterBehavior.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterCell.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAEmitterLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAGradientLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CALayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAMediaTiming.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAMediaTimingFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAReplicatorLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAScrollLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAShapeLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATextLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATiledLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransaction.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransform3D.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CATransformLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#import <span class="meta-string">&lt;QuartzCore/CAValueFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* COREANIMATION_H */</span></span></span><br></pre></td></tr></table></figure>
-
-<p>以CA开头的都是他的类，其中带layer的类是构成UIView的基石，用来呈现内容。其中：</p>
-<ul>
-<li>CAShapeLayer<br>用来根据CGPath来渲染的图层，这里CGPath就是上文中提到的CoreGraphics的一部分，比如常做的圆角，都是用cornerRadius来做，但是这是四个角都有的，要想做一个角的就得用他了。</li>
-<li>CATextLayer<br>这个layer可以呈现文字，包含了UILabel的功能，如果你闲的蛋疼，也可以用他来实现一个label。</li>
-<li>CAGradientLayer<br>是用来生成两种或更多颜色平滑渐变的。</li>
-<li>CAReplicatorLayer<br>是为了高效生成许多相似的图层。它会绘制一个或多个图层的子图层，并在每个复制体上应用不同的变换。</li>
-<li>CAScrollLayer<br>有点像UIScrollView，可以用来呈现比他大的内容。</li>
-<li>CATiledLayer<br>Tiled意思的瓷砖，就像铺地板一样，可以把一个很大的图片，切成一格一格的来呈现。</li>
-<li>CAEAGLLayer<br>用来进行OpenGL绘图的工作，需要有OpenGL的基础。</li>
-</ul>
-<p>CAAnimation类继承与NSObject，他是一个抽象类，并不直接负责动画，他有一个子类CAPropertyAnimation，也是抽象类。CAPropertyAnimation的两个子类才直接对layer层进行动画操作，其中CABasicAnimation负责基础动画，CAKeyframeAnimation负责关键帧动画。</p>
-<p>带有Emitter的类是负责粒子动画的类，可以用来做炫酷的粒子动画。</p>
-<p>带有Trans的类负责仿射动画，所谓仿射，就是模仿阳光照射，就有了立体的感觉，可以做三维空间的变换，不像CAAnimation，只能在平面上动手脚。</p>
-<p>CAMediaTiming是一个协议，里边规定了几个属性，用来精确控制时间，animation和layer实现了这个协议。</p>
-<h3 id="CoreGraphics-Quartz2D"><a href="#CoreGraphics-Quartz2D" class="headerlink" title="CoreGraphics/Quartz2D"></a>CoreGraphics/Quartz2D</h3><p>这是一个C语言写就的库,CoreGraphics的类名都是以CG开头的，平时所用的CGRect、CGPoint就在CGGeometry这个几何相关的类中定义，CGFont类则被封装成了UIFont，CGImage构成了UIImage，CGContext是绘图的上下文等等。所以CoreGraphics是系统绘制界面、文字、图像等UI的基础。</p>
-<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> COREGRAPHICS_H_</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> COREGRAPHICS_H_</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGBase.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGAffineTransform.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGBitmapContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColor.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColorConversionInfo.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGColorSpace.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGDataConsumer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGDataProvider.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGError.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGFont.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGFunction.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGGeometry.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGGradient.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGImage.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGLayer.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFArray.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFContentStream.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFContext.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFDictionary.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFDocument.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFObject.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFOperatorTable.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFPage.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFScanner.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFStream.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPDFString.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPath.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGPattern.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;CoreGraphics/CGShading.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span>  <span class="comment">/* COREGRAPHICS_H_ */</span></span></span><br></pre></td></tr></table></figure>
-
-<p>这是一个基于CoreGraphics API的绘图框架，系统中并没有Quartz2D.framework这么一个库，他只是包含了CoreGraphics中的部分API，是一个抽象的引擎，并不是一个实体，他在iOS和MAC系统中负责：</p>
-<ul>
-<li>绘制图形 : 线条\三角形\矩形\圆\弧等</li>
-<li>绘制文字</li>
-<li>绘制\生成图片(图像)</li>
-<li>读取\生成PDF</li>
-<li>截图\裁剪图片</li>
-<li>自定义UI控件</li>
-<li>绘制渐变</li>
-</ul>
-<p>PS：因为是API是C语言写成的，所以ARC并不起作用，仍然需要手动管理内存。</p>
-<h3 id="OpenGL-ES"><a href="#OpenGL-ES" class="headerlink" title="OpenGL ES"></a>OpenGL ES</h3><p>OpenGL ES是应用程序编程接口，该接口描述了方法、结构、函数应具有的行为以及应该如何被使用的语义。也就是说它只定义了一套规范，具体的实现由设备制造商根据规范去做。因为制造商可以自由的实现Open GL ES，所以不同系统实现的OpenGL ES也存在着巨大的性能差异。</p>
-<h3 id="绘图框架"><a href="#绘图框架" class="headerlink" title="绘图框架"></a>绘图框架</h3><p><strong>CoreGraphics/Quartz2D</strong>: QuartZ 2D是苹果公司开发的一套API，它是Core Graphics Framework的一部分，是一套基于C的API框架，使用了Quartz作为绘图引擎。它提供了低级别、轻量级、高保真度的2D渲染。该框架可以用于基于路径的绘图、变换、颜色管理、脱屏渲染，模板、渐变、遮蔽、图像数据管理、图像的创建、遮罩以及PDF文档的创建、显示和分析。<br><strong>OpenGL ES</strong>: OpenGL ES是跨平台的图形API，属于OpenGL的一个简化版本</p>
-<p><strong>Metal</strong>: 进行图像处理的整体框架(苹果新推出的替代OpenGL)</p>
-<p><strong>注意：网上很多人说<code>UIBeizerPath</code>也是绘图框架，我觉得<code>UIBeizerPath</code>只是对<code>CoreGraphics</code>的<code>path</code>做了封装</strong></p>
-<h4 id="上下文？-什么是上下文？"><a href="#上下文？-什么是上下文？" class="headerlink" title="上下文？ 什么是上下文？"></a>上下文？ 什么是上下文？</h4><p>有许多方式获得一个图形上下文，这里我介绍两种最为常用的获取方法。</p>
-<p>第一种方法就是创建一个图片类型的上下文。调用UIGraphicsBeginImageContextWithOptions函数就可获得用来处理图片的图形上下文。利用该上下文，你就可以在其上进行绘图，并生成图片。调用UIGraphicsGetImageFromCurrentImageContext函数可从当前上下文中获取一个UIImage对象。记住在你所有的绘图操作后别忘了调用UIGraphicsEndImageContext函数关闭图形上下文。</p>
-<p>第二种方法是利用cocoa为你生成的图形上下文。当你子类化了一个UIView并实现了自己的drawRect：方法后，一旦drawRect：方法被调用，Cocoa就会为你创建一个图形上下文，此时你对图形上下文的所有绘图操作都会显示在UIView上。</p>
-<p>判断一个上下文是否为当前图形上下文需要注意的几点：<br>1.UIGraphicsBeginImageContextWithOptions函数不仅仅是创建了一个适用于图形操作的上下文，并且该上下文也属于当前上下文。<br>2.当drawRect方法被调用时，UIView的绘图上下文属于当前图形上下文。<br>3.回调方法所持有的context：参数并不会让任何上下文成为当前图形上下文。此参数仅仅是对一个图形上下文的引用罢了。    </p>
-<p>Graphics Context的几种类型</p>
-<ol>
-<li>Bitmap Graphics Context  </li>
-<li>PDF Graphics Context  </li>
-<li>Window Graphics Context  </li>
-<li>Layer Context  </li>
-<li>Post Graphics Context  </li>
-</ol>
-<h3 id="参考链接"><a href="#参考链接" class="headerlink" title="参考链接"></a>参考链接</h3><p>iOS绘图框架CoreGraphics分析:<a href="http://www.cocoachina.com/articles/20187" target="_blank" rel="noopener">http://www.cocoachina.com/articles/20187</a><br>傻傻分不清：Quartz2D、QuartzCore、CoreAnimation、CoreImage、CoreGraphics:<a href="https://www.jianshu.com/p/397690fd4555" target="_blank" rel="noopener">https://www.jianshu.com/p/397690fd4555</a><br>iOS图像处理之Core Graphics和OpenGL ES小析:<a href="https://www.jianshu.com/p/f66a7ca326dd" target="_blank" rel="noopener">https://www.jianshu.com/p/f66a7ca326dd</a><br>iOS绘图教程 各种绘制原理：<a href="https://blog.csdn.net/moxi_wang/article/details/48473033" target="_blank" rel="noopener">https://blog.csdn.net/moxi_wang/article/details/48473033</a><br>iOS 图像渲染原理：<a href="http://www.cocoachina.com/cms/wap.php?action=article&id=25510" target="_blank" rel="noopener">http://www.cocoachina.com/cms/wap.php?action=article&amp;id=25510</a><br>iOS端K线系列之绘制方法比较（CoreGraphics、CoreAnimation）:<a href="https://www.jianshu.com/p/ed681ac5c89c" target="_blank" rel="noopener">https://www.jianshu.com/p/ed681ac5c89c</a><br>iOS 图形绘制框架 ——UIBezierPath 、Core Graphics 和OpenGL：<a href="https://www.jianshu.com/p/0cfd271fc6db" target="_blank" rel="noopener">https://www.jianshu.com/p/0cfd271fc6db</a></p>
-]]></content>
-      <categories>
-        <category>iOS</category>
-      </categories>
   </entry>
 </search>

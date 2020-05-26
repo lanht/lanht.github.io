@@ -46,12 +46,25 @@
     <link href="http://yoursite.com/2020/05/22/%E5%9B%BE%E5%83%8F%E6%98%BE%E7%A4%BA%E5%8E%9F%E7%90%86/"/>
     <id>http://yoursite.com/2020/05/22/%E5%9B%BE%E5%83%8F%E6%98%BE%E7%A4%BA%E5%8E%9F%E7%90%86/</id>
     <published>2020-05-22T10:26:40.000Z</published>
-    <updated>2020-05-22T10:26:40.958Z</updated>
+    <updated>2020-05-26T06:24:35.389Z</updated>
+    
+    <content type="html"><![CDATA[<p><img src="1.png" alt=""></p><p>CPU和GPU做了哪些事：</p><p><img src="2.png" alt=""></p><p>CPU的主要工作如下：</p><p>​    1）、Layout过程：主要是UI布局、文本计算</p><p>​    2）、Display过程：主要是绘制过程，比如drawrect方法就是在该过程调用</p><p>​    3）、Prepare过程：比如对视图中图片的解码</p><p>​    4）、Commit过程：将生成的位图提交到GPU</p><p>GPU渲染管线(即OpenGL渲染管线)步骤：</p><p>​    1）、顶点着色</p><p>​    2）、图元装配</p><p>​    3）、光栅化</p><p>​    4）、片段着色</p><p>​    5）、片段处理</p><p>​    6）、将处理好的位图提交到帧缓冲区FrameBuffer中</p>]]></content>
     
     <summary type="html">
     
+      
+      
+        &lt;p&gt;&lt;img src=&quot;1.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+&lt;p&gt;CPU和GPU做了哪些事：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;2.png&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+&lt;p&gt;CPU的主要工作如下：&lt;/p&gt;
+&lt;p&gt;​    1）、Layout过程：主要是UI布局、文本计算&lt;/p&gt;
+      
+    
     </summary>
     
+    
+      <category term="iOS" scheme="http://yoursite.com/categories/iOS/"/>
     
     
   </entry>
